@@ -128,7 +128,7 @@ def temperature_epsilon_schedule(
         )
 
 
-def evaluate_trajectories(args, parametrization, loss_fn, trajectories):
+def evaluate_trajectories(args, parametrization, loss_fn, trajectories, temperature, epsilon):
     if args.mode == "modified_db":
         transitions = Transitions.from_trajectories(trajectories)
         scores = loss_fn.get_modified_scores(transitions)
@@ -189,7 +189,7 @@ def evaluate_loss(
         loss = (scores + parametrization.logZ.tensor).pow(2)
     elif args.mode == "modified_db":
         loss = scores.pow(2)
-    elif args.mode == "symmetric_cycles" and not args.learn_PB:
+    elif args.mode == "symmetric_cycles":
         loss = (
             logPF_trajectories
             * (scores.detach() - baseline - on_policy_importance_sampling_weights)

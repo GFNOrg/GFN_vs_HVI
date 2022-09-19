@@ -11,6 +11,7 @@ parser.add_argument("--partition", type=str, default="main")
 parser.add_argument("--offset", type=int, default=0)
 parser.add_argument("--experiment_name", type=str, default="gfn_vs_hvi_complete")
 parser.add_argument("--no_cuda", action="store_true", default=False)
+parser.add_argument("--failed", action="store_true", default=False)
 
 
 args = parser.parse_args()
@@ -31,6 +32,8 @@ job_name = (
     if args.job_name is not None
     else f"{args.experiment_name.split('_')[0]}_{args.offset}"
 )
+if args.failed:
+    job_name = f"{job_name}_f"
 
 output_filename = os.path.join(slurm_outputs_directory, f"{job_name}")
 
@@ -43,8 +46,10 @@ mem = "10G"
 conda_env = "gfn"
 
 cuda_str = " --no_cuda" if args.no_cuda else ""
+failed_str = " --failed_runs" if args.failed else ""
 
 bash_range = "{1.." + str(args.n_threads_per_task) + "}"
+configs_str = f"--task_id=$i --total={args.n_threads_per_task} --offset={args.offset}"
 
 sbatch_skeleton = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
@@ -59,7 +64,7 @@ module load anaconda/3
 conda activate {conda_env}
 
 
-srun --output={output_filename}-%t.out bash -c 'for i in {bash_range}; do python off_policy.py --task_id=$i --total={args.n_threads_per_task} --offset={args.offset} {cuda_str} --log_directory={args.experiment_name} --wandb={wandb_name} & done; wait;'
+srun --output={output_filename}-%t.out bash -c 'for i in {bash_range}; do python off_policy.py {configs_str} {failed_str} {cuda_str} --log_directory={args.experiment_name} --wandb={wandb_name} & done; wait;'
 """
 
 sbatch_target = os.path.join(sbatch_directory, f"{job_name}.sh")
