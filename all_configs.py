@@ -21,7 +21,7 @@ modes_and_learnPBs_and_baselines = [
     ("modified_db", False, "None"),
     ("forward_kl", True, "local"),
     ("forward_kl", True, "global"),
-    ("forward_kl", False, None),
+    ("forward_kl", False, "None"),
     ("reverse_kl", True, "local"),
     ("reverse_kl", True, "global"),
     ("reverse_kl", False, "local"),

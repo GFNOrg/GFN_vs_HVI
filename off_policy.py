@@ -38,7 +38,7 @@ parser.add_argument("--no_cuda", action="store_true", default=False)
 
 # 1 - Environment specific arguments
 parser.add_argument(
-    "--env", type=str, choices=["hard", "easy", "manual"], default="hard"
+    "--env", type=str, choices=["hard", "easy", "medium", "manual"], default="hard"
 )
 parser.add_argument("--ndim", type=int, default=None)
 parser.add_argument("--height", type=int, default=None)
@@ -61,7 +61,7 @@ parser.add_argument(
 parser.add_argument("--init_temperature", type=float, default=None)
 parser.add_argument("--final_temperature", type=float, default=None)
 parser.add_argument("--init_epsilon", type=float, default=None)
-parser.add_argument("--final_epsilon", type=float, default=None)
+parser.add_argument("--final_epsilon", type=float, default=0.0)
 parser.add_argument("--exploration_phase_ends_by", type=int, default=None)
 parser.add_argument(
     "--prefill",
@@ -92,10 +92,11 @@ parser.add_argument(
 
 # 5 - Validation specific arguments
 parser.add_argument("--validation_interval", type=int, default=100)
-parser.add_argument("--gradient_estimation_interval", type=int, default=1000)
+parser.add_argument(
+    "--gradient_estimation_interval", type=int, default=0
+)  # 1000 would be a good value
 
 # 6 - Logging and checkpointing specific arguments
-parser.add_argument("--log_interval", type=int, default=100)
 parser.add_argument("--log_directory", type=str, default="gfn_vs_hvi_complete_test")
 parser.add_argument("--wandb", type=str, default=None)
 
@@ -174,8 +175,12 @@ try:
     )
 
     ## 1- Create the environment and models
-    if args.env != "manual":
-        (ndim, height, R0) = (2, 64, 0.001) if args.env == "hard" else (4, 8, 0.1)
+    if args.env == "hard":
+        (ndim, height, R0) = (2, 64, 0.001)
+    elif args.env == "medium":
+        (ndim, height, R0) = (4, 8, 0.01)
+    elif args.env == "easy":
+        (ndim, height, R0) = (4, 8, 0.1)
     else:
         (ndim, height, R0) = (args.ndim, args.height, args.R0)
     env = HyperGrid(ndim, height, R0)
@@ -216,7 +221,8 @@ try:
         )
         wandb.init(project=args.wandb, id=wandb_id, resume="allow")
         wandb.config.update(args, allow_val_change=True)
-        wandb.run.name = f"{args.wandb}_{config_id}"  # type: ignore
+        if config_id is not None:
+            wandb.run.name = f"{args.wandb}_{config_id}"  # type: ignore
 
     n_iterations = args.n_trajectories // args.batch_size
 
@@ -227,7 +233,7 @@ try:
                 args.init_temperature or 2.0,
                 args.init_epsilon or 1.0,
                 args.final_temperature or 1.0,
-                args.final_epsilon or 0.0,
+                args.final_epsilon,
                 args.exploration_phase_ends_by or 100,
             )
             actions_sampler.temperature = temperature
@@ -278,7 +284,7 @@ try:
         optimizer.step()
         scheduler.step()
 
-        if i % args.log_interval == 0:
+        if i % args.validation_interval == 0:
             save(
                 parametrization,
                 optimizer,
@@ -291,7 +297,10 @@ try:
                 save_path,
             )
         gradients_log = {}
-        if i % args.gradient_estimation_interval == 0:
+        if (
+            args.gradient_estimation_interval != 0
+            and i % args.gradient_estimation_interval == 0
+        ):
             logit_PF_parameters = list(parametrization.logit_PF.module.parameters())
             for p in logit_PF_parameters:
                 p.grad.zero_()

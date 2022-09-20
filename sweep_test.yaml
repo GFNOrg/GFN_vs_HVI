@@ -1,60 +1,62 @@
+
+## SWEEP 1: TB-hard-ONPOLICY-LearnedPB
+program: off_policy.py
 method: bayes
 metric:
   goal: minimize
   name: jsd
 parameters:
-  PB:
-    distribution: categorical
-    values:
-      - learnable
-  batch_size:
-    distribution: categorical
-    values:
-      - 64
-  env:
-    distribution: categorical
-    values:
-      - hard
-  log_directory:
-    distribution: categorical
-    values:
-      - gfn_vs_hvi_complete_sweeps
-  lr:
-    distribution: categorical
-    values:
-      - 0.001
-      - 0.01
-      - 0.0001
-      - 0.003
-      - 0.0003
-  lr_Z:
-    distribution: categorical
-    values:
-      - 0.1
-      - 0.01
-      - 0.03
-      - 0.3
-  mode:
-    distribution: categorical
-    values:
-      - tb
   n_trajectories:
-    distribution: categorical
     values:
-      - 250000
-  sampling_mode:
+      - 1000000
     distribution: categorical
+  sampling_mode:
     values:
       - on_policy
-  schedule:
     distribution: categorical
+  final_epsilon:
+    values:
+      - 0
+    distribution: categorical
+  batch_size:
+    values:
+      - 64
+    distribution: categorical
+  schedule:
     values:
       - 1
       - 0.9
       - 0.5
       - 0.1
-  wandb:
     distribution: categorical
+  PB:
     values:
-      - gfn_vs_hvi_complete
-program: off_policy.py
+      - "learnable"
+    distribution: categorical
+  baseline:
+    values:
+      - "None"
+    distribution: categorical
+  seed:
+    max: 200
+    min: 50
+    distribution: int_uniform
+  mode:
+    values:
+      - tb
+    distribution: categorical
+  env:
+    values:
+      - hard
+    distribution: categorical
+  lr:
+    distribution: log_uniform
+    max: -3
+    min: -9.2
+  lr_Z:
+    distribution: log_uniform
+    max: -0.7
+    min: -4.6
+early_terminate:
+  type: hyperband
+  min_iter: 20
