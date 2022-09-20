@@ -85,6 +85,7 @@ parser.add_argument(
     ],
     default="tb",
 )
+parser.add_argument("--PB", type=str, choices=["uniform", "learnable"])
 parser.add_argument("--learn_PB", action="store_true", default=False)
 parser.add_argument("--tie_PB", action="store_true", default=False)
 parser.add_argument(
@@ -108,6 +109,8 @@ parser.add_argument("--offset", type=int, default=None)
 parser.add_argument("--failed_runs", action="store_true", default=False)
 
 args = parser.parse_args()
+if args.PB == "learnable":
+    args.learn_PB = True
 
 # TODO: create the variable config_id if args.config_id is not None, or if this is launched by SLURM
 config_id = None
@@ -380,7 +383,8 @@ try:
             to_log.update(validation_info)
             to_log.update(gradients_log)
             if use_wandb:
-                wandb.log(to_log, step=i)
+                wandb.log({k: v for k, v in to_log.items() if k != "jsd"}, step=i)
+                wandb.log({"jsd": to_log["jsd"]}, step=i)
             tqdm.write(f"{i}: {to_log}")
 
     if config_id is not None:

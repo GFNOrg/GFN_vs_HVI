@@ -1,0 +1,60 @@
+method: bayes
+metric:
+  goal: minimize
+  name: jsd
+parameters:
+  PB:
+    distribution: categorical
+    values:
+      - learnable
+  batch_size:
+    distribution: categorical
+    values:
+      - 64
+  env:
+    distribution: categorical
+    values:
+      - hard
+  log_directory:
+    distribution: categorical
+    values:
+      - gfn_vs_hvi_complete_sweeps
+  lr:
+    distribution: categorical
+    values:
+      - 0.001
+      - 0.01
+      - 0.0001
+      - 0.003
+      - 0.0003
+  lr_Z:
+    distribution: categorical
+    values:
+      - 0.1
+      - 0.01
+      - 0.03
+      - 0.3
+  mode:
+    distribution: categorical
+    values:
+      - tb
+  n_trajectories:
+    distribution: categorical
+    values:
+      - 250000
+  sampling_mode:
+    distribution: categorical
+    values:
+      - on_policy
+  schedule:
+    distribution: categorical
+    values:
+      - 1
+      - 0.9
+      - 0.5
+      - 0.1
+  wandb:
+    distribution: categorical
+    values:
+      - gfn_vs_hvi_complete
+program: off_policy.py
