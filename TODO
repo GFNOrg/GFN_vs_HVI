@@ -1,1 +1,5 @@
 exploration_phase_ends_by is too low !! ( for off policy and pure off policy)
+
+I haven't started config_ids from 1501 to 2100 inclusive.
+
+I should clean the failed configs file (by removing the done ones, and relaunch the failed ones) - don't forget to clean models

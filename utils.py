@@ -128,7 +128,9 @@ def temperature_epsilon_schedule(
         )
 
 
-def evaluate_trajectories(args, parametrization, loss_fn, trajectories, temperature, epsilon):
+def evaluate_trajectories(
+    args, parametrization, loss_fn, trajectories, temperature, epsilon
+):
     if args.mode == "modified_db":
         transitions = Transitions.from_trajectories(trajectories)
         scores = loss_fn.get_modified_scores(transitions)
