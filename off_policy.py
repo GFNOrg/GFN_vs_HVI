@@ -402,7 +402,7 @@ try:
             if to_log["jsd"] < best_jsd:
                 best_jsd = to_log["jsd"]
                 best_jsd_iteration = i
-            if i - best_jsd_iteration >= args.early_stopping * args.validation_interval:
+            if i - best_jsd_iteration >= args.early_stop * args.validation_interval:
                 print("Early stopping")
                 break
 
