@@ -106,6 +106,12 @@ parser.add_argument("--task_id", type=int, default=None)
 parser.add_argument("--total", type=int, default=None)
 parser.add_argument("--offset", type=int, default=None)
 parser.add_argument("--failed_runs", action="store_true", default=False)
+
+
+parser.add_argument(
+    "--early_stop", type=int, default=10
+)  # Number of successive logs such that if there is no improvement, we stop
+
 args = parser.parse_args()
 
 
@@ -218,6 +224,8 @@ try:
 
     n_iterations = args.n_trajectories // args.batch_size
 
+    best_jsd = 100.324
+    best_jsd_iteration = -1
     for i in trange(iteration, n_iterations):
         if args.sampling_mode != "on_policy":
             temperature, epsilon = temperature_epsilon_schedule(
@@ -391,6 +399,12 @@ try:
                 wandb.log({k: v for k, v in to_log.items() if k != "jsd"}, step=i)
                 wandb.log({"jsd": to_log["jsd"]}, step=i)
             tqdm.write(f"{i}: {to_log}")
+            if to_log["jsd"] < best_jsd:
+                best_jsd = to_log["jsd"]
+                best_jsd_iteration = i
+            if i - best_jsd_iteration >= args.early_stopping * args.validation_interval:
+                print("Early stopping")
+                break
 
     if config_id is not None:
         with open(done_configs_file, "a+") as f:  # type: ignore
