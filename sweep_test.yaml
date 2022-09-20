@@ -46,3 +46,58 @@ parameters:
 early_terminate:
   type: hyperband
   min_iter: 20
+
+
+## SWEEP 1: TB-hard-OFFPOLICY-LearnedPB-64
+program: off_policy.py
+method: bayes
+metric:
+  goal: minimize
+  name: jsd
+parameters:
+  wandb:
+    value: gfn_vs_hvi_complete
+  n_trajectories:
+    value: 1000000
+  mode:
+    value: tb
+  baseline:
+    value: None
+  env:
+    value: hard
+  sampling_mode:
+    value: off_policy
+  PB:
+    value: learnable
+  final_epsilon:
+    min: -5
+    max: -1.2
+    distribution: log_uniform
+  final_temperature:
+    min: 1
+    max: 2
+    distribution: uniform
+  batch_size:
+    value: 64
+  schedule:
+    values:
+      - 1
+      - 0.9
+      - 0.5
+      - 0.1
+    distribution: categorical
+  seed:
+    max: 200
+    min: 50
+    distribution: int_uniform
+  lr:
+    distribution: log_uniform
+    max: -3
+    min: -9.2
+  lr_Z:
+    distribution: log_uniform
+    max: -0.7
+    min: -4.6
+early_terminate:
+  type: hyperband
+  min_iter: 20
