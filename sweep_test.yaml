@@ -1,27 +1,29 @@
 
-## SWEEP 1: TB-hard-ONPOLICY-LearnedPB
+## SWEEP 1: TB-hard-ONPOLICY-LearnedPB-64
 program: off_policy.py
 method: bayes
 metric:
   goal: minimize
   name: jsd
 parameters:
+  wandb:
+    value: gfn_vs_hvi_complete
   n_trajectories:
-    values:
-      - 1000000
-    distribution: categorical
+    value: 1000000
+  mode:
+    value: tb
+  baseline:
+    value: None
+  env:
+    value: hard
   sampling_mode:
-    values:
-      - on_policy
-    distribution: categorical
+    value: on_policy
+  PB:
+    value: learnable
   final_epsilon:
-    values:
-      - 0
-    distribution: categorical
+    value: 0
   batch_size:
-    values:
-      - 64
-    distribution: categorical
+    value: 64
   schedule:
     values:
       - 1
@@ -29,26 +31,10 @@ parameters:
       - 0.5
       - 0.1
     distribution: categorical
-  PB:
-    values:
-      - "learnable"
-    distribution: categorical
-  baseline:
-    values:
-      - "None"
-    distribution: categorical
   seed:
     max: 200
     min: 50
     distribution: int_uniform
-  mode:
-    values:
-      - tb
-    distribution: categorical
-  env:
-    values:
-      - hard
-    distribution: categorical
   lr:
     distribution: log_uniform
     max: -3

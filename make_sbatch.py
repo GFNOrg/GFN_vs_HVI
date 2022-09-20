@@ -12,6 +12,7 @@ parser.add_argument("--offset", type=int, default=0)
 parser.add_argument("--experiment_name", type=str, default="gfn_vs_hvi_complete")
 parser.add_argument("--no_cuda", action="store_true", default=False)
 parser.add_argument("--failed", action="store_true", default=False)
+parser.add_argument("--sweep", type=str, default=None)
 
 
 args = parser.parse_args()
@@ -34,6 +35,8 @@ job_name = (
 )
 if args.failed:
     job_name = f"{job_name}_f"
+if args.sweep is not None:
+    job_name = f"{job_name}_{args.sweep}"
 
 output_filename = os.path.join(slurm_outputs_directory, f"{job_name}")
 
@@ -51,6 +54,11 @@ failed_str = " --failed_runs" if args.failed else ""
 bash_range = "{1.." + str(args.n_threads_per_task) + "}"
 configs_str = f"--task_id=$i --total={args.n_threads_per_task} --offset={args.offset}"
 
+if args.sweep is not None:
+    script_to_run = f"wandb agent saleml/{args.experiment_name}/{args.sweep}"
+else:
+    script_to_run = f"python off_policy.py {configs_str} {failed_str} {cuda_str} --log_directory={args.experiment_name} --wandb={wandb_name}"
+
 sbatch_skeleton = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --output={output_filename}.out
@@ -64,7 +72,7 @@ module load anaconda/3
 conda activate {conda_env}
 
 
-srun --output={output_filename}-%t.out bash -c 'for i in {bash_range}; do python off_policy.py {configs_str} {failed_str} {cuda_str} --log_directory={args.experiment_name} --wandb={wandb_name} & done; wait;'
+srun --output={output_filename}-%t.out bash -c 'for i in {bash_range}; do {script_to_run} & done; wait;'
 """
 
 sbatch_target = os.path.join(sbatch_directory, f"{job_name}.sh")

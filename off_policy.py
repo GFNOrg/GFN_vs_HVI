@@ -108,13 +108,6 @@ parser.add_argument("--offset", type=int, default=None)
 parser.add_argument("--failed_runs", action="store_true", default=False)
 
 args = parser.parse_args()
-args.learn_PB = False
-args.tie_PB = False
-if args.PB == "learnable":
-    args.learn_PB = True
-if args.PB == "tied":
-    args.learn_PB = True
-    args.tie_PB = True
 
 
 # TODO: create the variable config_id if args.config_id is not None, or if this is launched by SLURM
