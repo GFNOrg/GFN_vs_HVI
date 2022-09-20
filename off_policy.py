@@ -59,7 +59,7 @@ parser.add_argument(
     default="on_policy",
 )
 parser.add_argument("--init_temperature", type=float, default=None)
-parser.add_argument("--final_temperature", type=float, default=None)
+parser.add_argument("--final_temperature", type=float, default=1.0)
 parser.add_argument("--init_epsilon", type=float, default=None)
 parser.add_argument("--final_epsilon", type=float, default=0.0)
 parser.add_argument("--exploration_phase_ends_by", type=int, default=None)
@@ -232,7 +232,7 @@ try:
                 i,
                 args.init_temperature or 2.0,
                 args.init_epsilon or 1.0,
-                args.final_temperature or 1.0,
+                args.final_temperature,
                 args.final_epsilon,
                 args.exploration_phase_ends_by or 100,
             )
