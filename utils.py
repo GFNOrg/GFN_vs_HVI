@@ -8,13 +8,11 @@ from gfn.samplers import LogitPFActionsSampler
 from gfn.containers import ReplayBuffer, Transitions
 
 
-def make_tb_parametrization(env, learn_PB, tie_PB, load_from=None):
+def make_tb_parametrization(env, PB, load_from=None):
     """
     It creates a TrajectoryBalance parametrization
 
     :param env: the environment we're working in
-    :param learn_PB: whether to learn the PB or use a uniform distribution
-    :param tie_PB: whether to tie the PB to the PF
     :param load_from: If you want to load a previously saved model, you can pass the path to the saved
     model here
     :return: A parametrization of the model.
@@ -24,8 +22,8 @@ def make_tb_parametrization(env, learn_PB, tie_PB, load_from=None):
     logit_PF = LogitPFEstimator(env=env, module_name="NeuralNet")
     logit_PB = LogitPBEstimator(
         env=env,
-        module_name="NeuralNet" if learn_PB else "Uniform",
-        torso=logit_PF.module.torso if tie_PB else None,
+        module_name="NeuralNet" if PB in ["learnable", "tied"] else "Uniform",
+        torso=logit_PF.module.torso if PB == "tied" else None,
     )
     parametrization = TBParametrization(logit_PF, logit_PB, logZ)
     if load_from is not None:

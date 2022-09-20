@@ -106,14 +106,13 @@ parser.add_argument("--task_id", type=int, default=None)
 parser.add_argument("--total", type=int, default=None)
 parser.add_argument("--offset", type=int, default=None)
 parser.add_argument("--failed_runs", action="store_true", default=False)
-
 args = parser.parse_args()
 
 
 # TODO: create the variable config_id if args.config_id is not None, or if this is launched by SLURM
 config_id = None
 slurm_proc_id = os.environ.get("SLURM_PROCID")
-if slurm_proc_id is not None or args.config_id is not None:
+if args.config_id is not None or (slurm_proc_id is not None and args.total is not None):
     assert args.wandb is not None
     print("Total number of configs:", total_configs)
     if args.config_id is None:
@@ -179,7 +178,7 @@ try:
     env = HyperGrid(ndim, height, R0)
 
     parametrization = make_tb_parametrization(
-        env, args.learn_PB, args.tie_PB, load_from=save_path if loading_model else None
+        env, args.PB, load_from=save_path if loading_model else None
     )
     actions_sampler = LogitPFActionsSampler(
         estimator=parametrization.logit_PF, temperature=1.0
