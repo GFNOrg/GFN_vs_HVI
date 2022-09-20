@@ -109,7 +109,7 @@ parser.add_argument("--failed_runs", action="store_true", default=False)
 
 
 parser.add_argument(
-    "--early_stop", type=int, default=10
+    "--early_stop", type=int, default=20
 )  # Number of successive logs such that if there is no improvement, we stop
 
 args = parser.parse_args()
