@@ -58,9 +58,9 @@ parser.add_argument(
     choices=["on_policy", "off_policy", "pure_off_policy"],
     default="on_policy",
 )
-parser.add_argument("--init_temperature", type=float, default=None)
+parser.add_argument("--init_temperature", type=float, default=2.0)
 parser.add_argument("--final_temperature", type=float, default=1.0)
-parser.add_argument("--init_epsilon", type=float, default=None)
+parser.add_argument("--init_epsilon", type=float, default=1.0)
 parser.add_argument("--final_epsilon", type=float, default=0.0)
 parser.add_argument("--exploration_phase_ends_by", type=int, default=100)
 parser.add_argument(
@@ -114,6 +114,10 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+if args.init_epsilon < args.final_epsilon:
+    raise ValueError("init_epsilon must be greater than final_epsilon")
+if args.init_temperature < args.final_temperature:
+    raise ValueError("init_temperature must be greater than final_temperature")
 
 # TODO: create the variable config_id if args.config_id is not None, or if this is launched by SLURM
 config_id = None
@@ -226,17 +230,21 @@ try:
 
     best_jsd = 100.324
     best_jsd_iteration = -1
-    if args.exploration_phase_ends_by == -1:
-        exploration_phase_ends_by = n_iterations
+    if args.exploration_phase_ends_by < 0:
+        exploration_phase_ends_by = int(
+            -1 / args.exploration_phase_ends_by * n_iterations
+        )  # one half, one third, etc. of the total number of iterations
+    else:
+        exploration_phase_ends_by = args.exploration_phase_ends_by
     for i in trange(iteration, n_iterations):
         if args.sampling_mode != "on_policy":
             temperature, epsilon = temperature_epsilon_schedule(
                 i,
-                args.init_temperature or 2.0,
-                args.init_epsilon or 1.0,
+                args.init_temperature,
+                args.init_epsilon,
                 args.final_temperature,
                 args.final_epsilon,
-                last_update=args.exploration_phase_ends_by,
+                last_update=exploration_phase_ends_by,
             )
             actions_sampler.temperature = temperature
             actions_sampler.epsilon = epsilon
