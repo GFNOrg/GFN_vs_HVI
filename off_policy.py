@@ -64,6 +64,9 @@ parser.add_argument("--init_epsilon", type=float, default=1.0)
 parser.add_argument("--final_epsilon", type=float, default=0.0)
 parser.add_argument("--exploration_phase_ends_by", type=int, default=100)
 parser.add_argument(
+    "--scheduler_type", type=str, choices=["linear", "cosine"], default="linear"
+)
+parser.add_argument(
     "--prefill",
     type=int,
     default=100,
@@ -245,7 +248,8 @@ try:
                 args.final_temperature,
                 args.final_epsilon,
                 last_update=exploration_phase_ends_by,
-            )
+                scheduler_type=args.scheduler_type,
+            )  # type: ignore
             actions_sampler.temperature = temperature
             actions_sampler.epsilon = epsilon
         trajectories = trajectories_sampler.sample(args.batch_size)

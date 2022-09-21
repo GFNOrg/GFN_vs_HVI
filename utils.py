@@ -124,7 +124,13 @@ def cosine_annealing_schedule(iteration, init, final, last_update):
 
 
 def temperature_epsilon_schedule(
-    iteration, init_temp, init_epsilon, final_temp, final_epsilon, last_update
+    iteration,
+    init_temp,
+    init_epsilon,
+    final_temp,
+    final_epsilon,
+    last_update,
+    scheduler_type="linear",
 ):
     """
     A temperature and epsilon schedule that starts at init_temp and ends at final_temp after last_update iterations
@@ -132,10 +138,20 @@ def temperature_epsilon_schedule(
     if iteration > last_update:
         return final_temp, final_epsilon
     else:
-        return (
-            init_temp + (final_temp - init_temp) * iteration / last_update,
-            init_epsilon + (final_epsilon - init_epsilon) * iteration / last_update,
-        )
+        if scheduler_type == "linear":
+            return (
+                init_temp + (final_temp - init_temp) * iteration / last_update,
+                init_epsilon + (final_epsilon - init_epsilon) * iteration / last_update,
+            )
+        elif scheduler_type == "cosine":
+            return (
+                cosine_annealing_schedule(
+                    iteration, init_temp, final_temp, last_update
+                ),
+                cosine_annealing_schedule(
+                    iteration, init_epsilon, final_epsilon, last_update
+                ),
+            )
 
 
 def evaluate_trajectories(
