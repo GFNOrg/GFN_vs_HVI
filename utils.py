@@ -135,7 +135,7 @@ def temperature_epsilon_schedule(
     """
     A temperature and epsilon schedule that starts at init_temp and ends at final_temp after last_update iterations
     """
-    if iteration > last_update:
+    if iteration >= last_update:
         return final_temp, final_epsilon
     else:
         if scheduler_type == "linear":
