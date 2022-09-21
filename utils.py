@@ -6,6 +6,7 @@ from gfn.parametrizations import TBParametrization
 from gfn.estimators import LogitPFEstimator, LogitPBEstimator, LogZEstimator
 from gfn.samplers import LogitPFActionsSampler
 from gfn.containers import ReplayBuffer, Transitions
+import math
 
 
 def make_tb_parametrization(env, PB, load_from=None):
@@ -47,7 +48,15 @@ def make_buffer(env, capacity, load_from=None):
     return buffer
 
 
-def make_optimizers(parametrization, mode, lr, lr_Z, schedule, load_from=None):
+def make_optimizers(
+    parametrization,
+    lr,
+    lr_PB,
+    lr_Z,
+    schedule,
+    scheduler_type="linear",  # TODO: FIX
+    load_from=None,
+):
     """
     It creates two optimizers, one for the parameters of the model and one for the log-partition
     function, and two schedulers, one for each optimizer
@@ -56,47 +65,64 @@ def make_optimizers(parametrization, mode, lr, lr_Z, schedule, load_from=None):
     :param mode: "tb" or "tb_Z"
     :param lr: learning rate for the parameters
     :param lr_Z: learning rate for the logZ parameter
-    :param schedule: the learning rate decay schedule
+    :param schedule: the learning rate decay schedule, gamma if "linear" which is MultiStepLR, or
     :param load_from: the directory to load the optimizers from. If None, then the optimizers are initialized from
     scratch
     :return: optimizer, optimizer_Z, scheduler, scheduler_Z
     """
-    params = [
-        {
-            "params": [
-                val for key, val in parametrization.parameters.items() if key != "logZ"
-            ],
-            "lr": lr,
-        }
-    ]
-
-    optimizer = torch.optim.Adam(params, lr=lr)
-    if mode == "tb":
-        optimizer.add_param_group(
-            {"params": [parametrization.parameters["logZ"]], "lr": lr_Z}
+    params_pf = parametrization.logit_PF.module.parameters()
+    optimizer_pf = torch.optim.Adam(params_pf, lr=lr)
+    optimizer_pb = None
+    if parametrization.logit_PB.module_name == "NeuralNet":
+        params_pb = parametrization.logit_PB.module.parameters()
+        optimizer_pb = torch.optim.Adam(params_pb, lr=lr_PB)
+    optimizer_Z = torch.optim.Adam([parametrization.logZ.tensor], lr=lr_Z)
+    scheduler_pb = None
+    if scheduler_type == "linear":
+        scheduler_pf = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer_pf, milestones=list(range(2000, 100000, 2000)), gamma=schedule
         )
-        optimizer_Z = None
-        scheduler_Z = None
-    else:
-        optimizer_Z = torch.optim.Adam([parametrization.parameters["logZ"]], lr=lr_Z)
+        if optimizer_pb is not None:
+            scheduler_pb = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer_pb, milestones=list(range(2000, 100000, 2000)), gamma=schedule
+            )
         scheduler_Z = torch.optim.lr_scheduler.MultiStepLR(
             optimizer_Z, milestones=list(range(2000, 100000, 2000)), gamma=schedule
         )
-        if load_from is not None:
-            optimizer_Z.load_state_dict(
-                torch.load(os.path.join(load_from, "optimizer_Z.pt"))
-            )
-            scheduler_Z.load_state_dict(
-                torch.load(os.path.join(load_from, "scheduler_Z.pt"))
-            )
-
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=list(range(2000, 100000, 2000)), gamma=schedule
-    )
+    # elif (
+    #     scheduler_type == "cosine"
+    # ):  #  FALSE -- FIX THIS ## TODO: MAYBE NOT THAT IMPORTANT TO HAVE A COSINE SCHEDULER HERE - JUST USE THE MULTISTEP ONE (SO NO ARGUMENT SCHEDULER_TYPE FOR THIS FUNCTION)
+    #     scheduler_pf = torch.optim.lr_scheduler.LambdaLR(
+    #         optimizer_pf, lambda i: cosine_annealing_schedule(i, 1, schedule, 2000)
+    #     )
+    #     if optimizer_pb is not None:
+    #         scheduler_pb = torch.optim.lr_scheduler.LambdaLR(
+    #             optimizer_pb, lambda i: cosine_annealing_schedule(i, 1, schedule, 2000)
+    #         )
+    #     scheduler_Z = torch.optim.lr_scheduler.LambdaLR(
+    #         optimizer_Z, lambda i: cosine_annealing_schedule(i, 1, schedule, 2000)
+    #     )
+    else:
+        raise ValueError("Unknown scheduler type")
     if load_from is not None:
-        optimizer.load_state_dict(torch.load(os.path.join(load_from, "optimizer.pt")))
-        scheduler.load_state_dict(torch.load(os.path.join(load_from, "scheduler.pt")))
-    return (optimizer, optimizer_Z, scheduler, scheduler_Z)
+        optimizer_pf.load_state_dict(
+            torch.load(os.path.join(load_from, "optimizer_pf.pt"))
+        )
+        if optimizer_pb is not None:
+            optimizer_pb.load_state_dict(
+                torch.load(os.path.join(load_from, "optimizer_pb.pt"))
+            )
+        optimizer_Z.load_state_dict(
+            torch.load(os.path.join(load_from, "optimizer_Z.pt"))
+        )
+    return (
+        optimizer_pf,
+        optimizer_pb,
+        optimizer_Z,
+        scheduler_pf,
+        scheduler_pb,
+        scheduler_Z,
+    )
 
 
 def get_metadata(load_from=None):
@@ -114,12 +140,13 @@ def get_metadata(load_from=None):
 def cosine_annealing_schedule(iteration, init, final, last_update):
     """
     A cosine annealing schedule that starts at init and ends at final after last_update iterations
+    init is the max value
     """
     if iteration >= last_update:
         return final
     else:
-        return init + (final - init) * 0.5 * (
-            1 + torch.cos(torch.pi * iteration / last_update)
+        return final + (init - final) * 0.5 * (
+            1 + math.cos(math.pi * iteration / last_update)
         )
 
 
@@ -255,9 +282,11 @@ def evaluate_loss(
 
 def save(
     parametrization,
-    optimizer,
+    optimizer_pf,
+    optimizer_pb,
     optimizer_Z,
-    scheduler,
+    scheduler_pf,
+    scheduler_pb,
     scheduler_Z,
     replay_buffer,
     iteration,
@@ -277,11 +306,17 @@ def save(
     :param save_path: the path to save the model to
     """
     parametrization.save_state_dict(save_path)
-    torch.save(optimizer.state_dict(), os.path.join(save_path, "optimizer.pt"))
-    torch.save(scheduler.state_dict(), os.path.join(save_path, "scheduler.pt"))
-    if optimizer_Z is not None:
-        torch.save(optimizer_Z.state_dict(), os.path.join(save_path, "optimizer_Z.pt"))
-        torch.save(scheduler_Z.state_dict(), os.path.join(save_path, "scheduler_Z.pt"))
+    torch.save(optimizer_pf.state_dict(), os.path.join(save_path, "optimizer.pt"))
+    torch.save(scheduler_pf.state_dict(), os.path.join(save_path, "scheduler.pt"))
+    if optimizer_pf is not None and scheduler_pb is not None:
+        torch.save(
+            optimizer_pb.state_dict(), os.path.join(save_path, "optimizer_pb.pt")
+        )
+        torch.save(
+            scheduler_pb.state_dict(), os.path.join(save_path, "scheduler_pb.pt")
+        )
+    torch.save(optimizer_Z.state_dict(), os.path.join(save_path, "optimizer_Z.pt"))
+    torch.save(scheduler_Z.state_dict(), os.path.join(save_path, "scheduler_Z.pt"))
     if replay_buffer is not None:
         replay_buffer.save(save_path)
     with open(os.path.join(save_path, "metadata.txt"), "w") as f:

@@ -101,3 +101,99 @@ parameters:
 early_terminate:
   type: hyperband
   min_iter: 20
+
+
+
+## SWEEP 1: ALL-medium-PUREOFFPOLICY-justepsilon-LearnedPB-64
+program: off_policy.py
+method: bayes
+metric:
+  goal: minimize
+  name: jsd
+parameters:
+  wandb:
+    value: gfn_vs_hvi_complete
+  n_trajectories:
+    value: 1000000
+  batch_size:
+    values:
+      - 16
+      - 64
+  mode:
+    values:
+      - tb
+      # - modified_db
+      - reverse_kl
+      - forward_kl
+      - rws
+      - reverse_rws
+      - symmetric_cycles
+    distribution: categorical
+  baseline:
+    values: 
+      - None
+      - local
+      - global
+    distribution: categorical
+  env:
+    value: medium
+  sampling_mode:
+    values:
+      - pure_off_policy
+      - on_policy
+      - off_policy
+  PB:
+    values:
+    - learnable
+    - uniform
+  init_epsilon:
+    distribution: inv_log_uniform_values
+    max: 1
+    min: 1e-06
+  final_epsilon:
+    min: 1e-6
+    max: 0.3
+    distribution: log_uniform_values
+  init_temperature:
+    values:
+      - 2
+      - 1
+    distribution: categorical
+  final_temperature:
+    min: 1
+    max: 1.5
+    distribution: log_uniform_values
+  exploration_phase_ends_by:
+    values:
+      - 100
+      - 0
+      - -1
+      - -2
+      - -4
+      - -10
+    distribution: categorical
+  scheduler_type:
+    values:
+      - linear
+      - cosine
+    distribution: categorical
+  schedule:
+    min: 0.01
+    max: 1
+    distribution: uniform
+  seed:
+    max: 200
+    min: 50
+    distribution: int_uniform
+  lr:
+    distribution: log_uniform_values
+    max: 1e-1
+    min: 1e-5
+  lr_PB:
+    distribution: log_uniform_values
+    max: 1e-1
+    min: 1e-5
+  lr_Z:
+    distribution: log_uniform_values
+    max: 0.5
+    min: 1e-3

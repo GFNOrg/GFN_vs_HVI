@@ -48,6 +48,7 @@ parser.add_argument("--R0", type=float, default=None)
 parser.add_argument("--n_trajectories", type=int, default=1000000)
 parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--lr", type=float, default=1e-3)
+parser.add_argument("--lr_PB", type=float, default=1e-3)
 parser.add_argument("--lr_Z", type=float, default=1e-1)
 parser.add_argument("--schedule", type=float, default=1.0)
 
@@ -121,6 +122,12 @@ if args.init_epsilon < args.final_epsilon:
     raise ValueError("init_epsilon must be greater than final_epsilon")
 if args.init_temperature < args.final_temperature:
     raise ValueError("init_temperature must be greater than final_temperature")
+
+if args.baseline != "None":
+    assert (args.mode, args.PB) in [
+        ("forward_kl", "learnable"),
+        ("forward_kl", "tied"),
+    ] or args.mode in ["reverse_kl", "reverse_rws", "symmetric_cycles"]
 
 # TODO: create the variable config_id if args.config_id is not None, or if this is launched by SLURM
 config_id = None
@@ -202,12 +209,20 @@ try:
     else:
         loss_fn = TrajectoryBalance(parametrization)
 
-    optimizer, optimizer_Z, scheduler, scheduler_Z = make_optimizers(
+    (
+        optimizer_pf,
+        optimizer_pb,
+        optimizer_Z,
+        scheduler_pf,
+        scheduler_pb,
+        scheduler_Z,
+    ) = make_optimizers(
         parametrization,
-        args.mode,
         args.lr,
+        args.lr_PB,
         args.lr_Z,
         args.schedule,
+        scheduler_type="linear",  # should be args.scheduler_type
         load_from=save_path if loading_model else None,
     )
 
@@ -275,14 +290,10 @@ try:
             actions_sampler.epsilon,
         )
 
-        if args.mode != "tb":
-            optimizer_Z.zero_grad()  # type: ignore
-            loss_Z = (parametrization.logZ.tensor + scores.detach()).pow(2).mean()
-            loss_Z.backward()
-            optimizer_Z.step()  # type: ignore
-            scheduler_Z.step()  # type: ignore
-
-        optimizer.zero_grad()
+        optimizer_pf.zero_grad()
+        optimizer_Z.zero_grad()
+        if optimizer_pb is not None:
+            optimizer_pb.zero_grad()
 
         loss = evaluate_loss(
             args,
@@ -294,16 +305,27 @@ try:
             logPF_trajectories,
             logPB_trajectories,
         )
+        if args.mode != "tb":
+            loss_Z = (parametrization.logZ.tensor + scores.detach()).pow(2).mean()
+            loss += loss_Z
+
         loss.backward()
-        optimizer.step()
-        scheduler.step()
+        optimizer_pf.step()
+        scheduler_pf.step()
+        optimizer_Z.step()
+        scheduler_Z.step()
+        if optimizer_pb is not None and scheduler_pb is not None:
+            optimizer_pb.step()
+            scheduler_pb.step()
 
         if i % args.validation_interval == 0:
             save(
                 parametrization,
-                optimizer,
+                optimizer_pf,
+                optimizer_pb,
                 optimizer_Z,
-                scheduler,
+                scheduler_pf,
+                scheduler_pb,
                 scheduler_Z,
                 replay_buffer,
                 i,
