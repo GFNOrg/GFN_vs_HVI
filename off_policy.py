@@ -62,7 +62,7 @@ parser.add_argument("--init_temperature", type=float, default=None)
 parser.add_argument("--final_temperature", type=float, default=1.0)
 parser.add_argument("--init_epsilon", type=float, default=None)
 parser.add_argument("--final_epsilon", type=float, default=0.0)
-parser.add_argument("--exploration_phase_ends_by", type=int, default=None)
+parser.add_argument("--exploration_phase_ends_by", type=int, default=100)
 parser.add_argument(
     "--prefill",
     type=int,
@@ -226,6 +226,8 @@ try:
 
     best_jsd = 100.324
     best_jsd_iteration = -1
+    if args.exploration_phase_ends_by == -1:
+        exploration_phase_ends_by = n_iterations
     for i in trange(iteration, n_iterations):
         if args.sampling_mode != "on_policy":
             temperature, epsilon = temperature_epsilon_schedule(
@@ -234,7 +236,7 @@ try:
                 args.init_epsilon or 1.0,
                 args.final_temperature,
                 args.final_epsilon,
-                args.exploration_phase_ends_by or 100,
+                last_update=args.exploration_phase_ends_by,
             )
             actions_sampler.temperature = temperature
             actions_sampler.epsilon = epsilon

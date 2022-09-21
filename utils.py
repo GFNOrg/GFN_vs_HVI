@@ -111,6 +111,18 @@ def get_metadata(load_from=None):
     return (iteration, wandb_id)
 
 
+def cosine_annealing_schedule(iteration, init, final, last_update):
+    """
+    A cosine annealing schedule that starts at init and ends at final after last_update iterations
+    """
+    if iteration >= last_update:
+        return final
+    else:
+        return init + (final - init) * 0.5 * (
+            1 + torch.cos(torch.pi * iteration / last_update)
+        )
+
+
 def temperature_epsilon_schedule(
     iteration, init_temp, init_epsilon, final_temp, final_epsilon, last_update
 ):
