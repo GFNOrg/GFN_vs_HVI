@@ -163,3 +163,7 @@ cython_debug/
 configs/
 done_configs
 wandb/
+
+.vscode/*
+*.yaml
+sweep_test.yaml
