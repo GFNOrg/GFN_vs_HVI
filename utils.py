@@ -165,7 +165,7 @@ def get_number_of_modes(P_T, true_dist_pmf, env_dim, env_height):
             : (2**env_dim) * n_pixels_per_mode
         ].numpy()
     )
-    return int(len(modes_idx.intersection(P_T_modes_idx)) / n_pixels_per_mode)
+    return round(len(modes_idx.intersection(P_T_modes_idx)) / n_pixels_per_mode)
 
 
 def get_validation_info(env, parametrization):
