@@ -182,7 +182,11 @@ loading_model = os.path.exists(save_path) and run_name != "temporary_run"
 if not os.path.exists(save_path):
     os.makedirs(save_path)
 
-torch.manual_seed(args.seed)
+if args.seed == 0:
+    seed = torch.randint(0, 1000000, (1,)).item()
+else:
+    seed = args.seed
+torch.manual_seed(seed)
 device_str = "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu"
 
 print(
