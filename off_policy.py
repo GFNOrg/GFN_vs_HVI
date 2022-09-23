@@ -124,6 +124,12 @@ parser.add_argument(
 )
 
 parser.add_argument("--replay_capacity", type=int, default=10000)
+parser.add_argument(
+    "--temperature_sf_string",
+    type=str,
+    default="False",
+    help="if True, it sets the args.temperature_sf to True. This is useful for wandb.",
+)
 
 
 # 4 - Learning specific arguments
@@ -165,6 +171,8 @@ parser.add_argument(
 )  # Number of successive logs such that if there is no improvement, we stop
 
 args = parser.parse_args()
+if args.temperature_sf_string == "True":
+    args.temperature_sf = True
 
 config_id = args.config_id if args.config_id > 0 else None
 run_name = "temporary_run" if config_id is None else f"{args.wandb}_{config_id}"
