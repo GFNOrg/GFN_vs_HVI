@@ -167,6 +167,7 @@ parser.add_argument("--config_id", type=int, default=0)
 parser.add_argument("--task_id", type=int, default=None)
 parser.add_argument("--total", type=int, default=None)
 parser.add_argument("--offset", type=int, default=None)
+parser.add_argument("--failed_runs", action="store_true", default=False)
 
 parser.add_argument(
     "--early_stop", type=int, default=20
@@ -178,18 +179,24 @@ slurm_proc_id = os.environ.get("SLURM_PROCID")
 print("slurm_proc_id:", slurm_proc_id)
 print("args.total:", args.total)
 print("args.offset:", args.offset)
-if slurm_proc_id is not None and args.total is not None:
+if slurm_proc_id is not None and args.total is not None and args.config_id == 0:
     print("Total number of configs:", len(all_configs_dict))
-    if args.config_id == 0:
-        args.config_id = (
-            int(slurm_proc_id) * args.total + args.offset + args.task_id  # type: ignore
-        )
-        print("args.config_id:", args.config_id)
-    config_id = args.config_id
+    args.config_id = (
+        int(slurm_proc_id) * args.total + args.offset + args.task_id  # type: ignore
+    )
+    print("args.config_id:", args.config_id)
+config_id = args.config_id
+if args.failed_runs:
+    failed_configs = get_failed_configs_list(args.wandb)
+    print("Total number of failed configs:", len(failed_configs))
+    print(f"Getting the {args.config_id}th config from the failed configs list")
+    config_id = failed_configs[config_id - 1]
+    args.config_id = config_id
 
-    config = all_configs_dict[config_id - 1]
-    for key in config:
-        setattr(args, key, config[key])
+
+config = all_configs_dict[config_id - 1]
+for key in config:
+    setattr(args, key, config[key])
 
 if args.temperature_sf_string == "True":
     args.temperature_sf = True

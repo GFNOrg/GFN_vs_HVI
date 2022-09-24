@@ -159,3 +159,7 @@ for seed in range(100, 110):
             config_dict["seed"] = seed
             config_dict["replay_capacity"] = replay_capacity
             all_configs_dict.append(config_dict)
+
+
+if __name__ == "__main__":
+    print(len(all_configs_dict))
