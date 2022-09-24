@@ -43,7 +43,7 @@ from learn_utils import (
 import io
 from PIL import Image
 
-from all_configs import all_configs_list_of_dicts, total_configs
+from paper_configs import all_configs_dict
 from get_failed_jobs_configs import get_failed_configs_list
 
 
@@ -155,11 +155,11 @@ parser.add_argument(
 # 5 - Validation specific arguments
 parser.add_argument("--validation_interval", type=int, default=100)
 parser.add_argument(
-    "--gradient_estimation_interval", type=int, default=0
+    "--gradient_estimation_interval", type=int, default=1000
 )  # 1000 would be a good value
 
 # 6 - Logging and checkpointing specific arguments
-parser.add_argument("--wandb", type=str, default="off_policy_gflownets")
+parser.add_argument("--wandb", type=str, default="off_policy_gflownets_paper")
 parser.add_argument("--no_wandb", action="store_true", default=False)
 
 # 7 - Misc
@@ -171,10 +171,17 @@ parser.add_argument(
 )  # Number of successive logs such that if there is no improvement, we stop
 
 args = parser.parse_args()
+
+config_id = args.config_id if args.config_id > 0 else None
+if config_id is not None:
+    config = all_configs_dict[config_id - 1]
+    for key in config:
+        setattr(args, key, config[key])
+
 if args.temperature_sf_string == "True":
     args.temperature_sf = True
 
-config_id = args.config_id if args.config_id > 0 else None
+
 run_name = "temporary_run" if config_id is None else f"{args.wandb}_{config_id}"
 save_path = os.path.join(os.environ["SCRATCH_PATH"], args.wandb, "models", run_name)
 
@@ -352,14 +359,13 @@ for i in trange(iteration, n_iterations):
     if (
         args.gradient_estimation_interval != 0
         and i % args.gradient_estimation_interval == 0
-    ):
+    ) or i == n_iterations - 1:
         gradients_log = get_gradients_log(
             parametrization, trajectories_sampler, args, loss_fn, actions_sampler
         )
     else:
         gradients_log = {}
-
-    if i % args.validation_interval == 0:
+    if i % args.validation_interval == 0 or i == n_iterations - 1:
         if run_name != "temporary_run":
             save(
                 parametrization,
@@ -407,6 +413,9 @@ for i in trange(iteration, n_iterations):
         if to_log["jsd"] < best_jsd:
             best_jsd = to_log["jsd"]
             best_jsd_iteration = i
-        if i - best_jsd_iteration >= args.early_stop * args.validation_interval:
+        if (
+            args.early_stop > 0
+            and i - best_jsd_iteration >= args.early_stop * args.validation_interval
+        ):
             print("Early stopping")
             break

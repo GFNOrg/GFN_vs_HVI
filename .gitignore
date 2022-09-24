@@ -167,3 +167,6 @@ wandb/
 .vscode/*
 *.yaml
 sweep_test.yaml
+
+*.png
+*.csv

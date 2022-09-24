@@ -266,8 +266,13 @@ def get_gradients_log(
 ):
     gradients_log = {}
     logit_PF_parameters = list(parametrization.logit_PF.module.parameters())
+    if parametrization.logit_PB.module_name == "NeuralNet":
+        logit_PB_parameters = list(parametrization.logit_PB.module.parameters())
     for p in logit_PF_parameters:
         p.grad.zero_()
+    if parametrization.logit_PB.module_name == "NeuralNet":
+        for p in logit_PB_parameters:  # type: ignore
+            p.grad.zero_()
     trajectories = trajectories_sampler.sample(1024)
     (
         scores,
@@ -294,7 +299,7 @@ def get_gradients_log(
         logPF_trajectories,
         logPB_trajectories,
     )
-    loss_big_batch.backward()
+    loss_big_batch.backward(retain_graph=True)
     gradients_big_batch = [p.grad.clone() for p in logit_PF_parameters]
 
     for K in [4, 6]:
@@ -303,7 +308,13 @@ def get_gradients_log(
         for k in range(num_small_batches):
             small_batches.append(trajectories[k * 2**K : (k + 1) * 2**K])
         per_batch_cosine_similarities = []
-        for small_batch in small_batches:
+        for i, small_batch in enumerate(small_batches):
+            for p in logit_PF_parameters:
+                p.grad.zero_()
+            if parametrization.logit_PB.module_name == "NeuralNet":
+                for p in logit_PB_parameters:  # type: ignore
+                    p.grad.zero_()
+            parametrization.logZ.tensor.grad.zero_()
             (
                 scores,
                 baseline,
@@ -330,10 +341,7 @@ def get_gradients_log(
                 logPB_trajectories,
             )
 
-            for p in logit_PF_parameters:
-                p.grad.zero_()
-
-            loss_small_batch.backward()
+            loss_small_batch.backward(retain_graph=True)
             gradients_small_batch = [p.grad.clone() for p in logit_PF_parameters]
             cosine_similarities = [
                 (gradient_big * gradient_small).sum()

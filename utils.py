@@ -165,7 +165,7 @@ def get_number_of_modes(P_T, true_dist_pmf, env_dim, env_height):
             : (2**env_dim) * n_pixels_per_mode
         ].numpy()
     )
-    return round(len(modes_idx.intersection(P_T_modes_idx)) / n_pixels_per_mode)
+    return len(modes_idx.intersection(P_T_modes_idx)) / n_pixels_per_mode
 
 
 def get_validation_info(env, parametrization):
@@ -181,7 +181,12 @@ def get_validation_info(env, parametrization):
     jsd = JSD(P_T, true_dist_pmf).item()
     number_of_modes = get_number_of_modes(P_T, true_dist_pmf, env.ndim, env.height)
 
-    validation_info = {"l1_dist": l1_dist, "jsd": jsd, "modes_found": number_of_modes}
+    validation_info = {
+        "l1_dist": l1_dist,
+        "jsd": jsd,
+        "modes_found": number_of_modes,
+        "modes_found_rounded": round(number_of_modes),
+    }
     if logZ is not None:
         validation_info["logZ_error"] = abs(logZ - true_logZ)
 
