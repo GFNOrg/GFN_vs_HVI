@@ -164,16 +164,29 @@ parser.add_argument("--no_wandb", action="store_true", default=False)
 
 # 7 - Misc
 parser.add_argument("--config_id", type=int, default=0)
-
+parser.add_argument("--task_id", type=int, default=None)
+parser.add_argument("--total", type=int, default=None)
+parser.add_argument("--offset", type=int, default=None)
 
 parser.add_argument(
     "--early_stop", type=int, default=20
 )  # Number of successive logs such that if there is no improvement, we stop
 
 args = parser.parse_args()
+config_id = None
+slurm_proc_id = os.environ.get("SLURM_PROCID")
+print("slurm_proc_id:", slurm_proc_id)
+print("args.total:", args.total)
+print("args.offset:", args.offset)
+if slurm_proc_id is not None and args.total is not None:
+    print("Total number of configs:", len(all_configs_dict))
+    if args.config_id == 0:
+        args.config_id = (
+            int(slurm_proc_id) * args.total + args.offset + args.task_id  # type: ignore
+        )
+        print("args.config_id:", args.config_id)
+    config_id = args.config_id
 
-config_id = args.config_id if args.config_id > 0 else None
-if config_id is not None:
     config = all_configs_dict[config_id - 1]
     for key in config:
         setattr(args, key, config[key])

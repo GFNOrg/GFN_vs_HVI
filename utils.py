@@ -90,9 +90,7 @@ def save(
     :param save_path: the path to save the model to
     """
     parametrization.save_state_dict(save_path)
-    if scheduler_pf is not None and scheduler_Z is not None:
-        torch.save(optimizer_pf.state_dict(), os.path.join(save_path, "optimizer.pt"))
-        torch.save(scheduler_pf.state_dict(), os.path.join(save_path, "scheduler.pt"))
+    torch.save(optimizer_pf.state_dict(), os.path.join(save_path, "optimizer.pt"))
     if optimizer_pf is not None and scheduler_pb is not None:
         torch.save(
             optimizer_pb.state_dict(), os.path.join(save_path, "optimizer_pb.pt")
@@ -101,7 +99,9 @@ def save(
             scheduler_pb.state_dict(), os.path.join(save_path, "scheduler_pb.pt")
         )
     torch.save(optimizer_Z.state_dict(), os.path.join(save_path, "optimizer_Z.pt"))
-    torch.save(scheduler_Z.state_dict(), os.path.join(save_path, "scheduler_Z.pt"))
+    if scheduler_pf is not None and scheduler_Z is not None:
+        torch.save(scheduler_pf.state_dict(), os.path.join(save_path, "scheduler.pt"))
+        torch.save(scheduler_Z.state_dict(), os.path.join(save_path, "scheduler_Z.pt"))
     if replay_buffer is not None:
         replay_buffer.save(save_path)
     with open(os.path.join(save_path, "metadata.txt"), "w") as f:

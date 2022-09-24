@@ -57,7 +57,7 @@ configs_str = f"--task_id=$i --total={args.n_threads_per_task} --offset={args.of
 if args.sweep is not None:
     script_to_run = f"wandb agent saleml/{args.experiment_name}/{args.sweep}"
 else:
-    script_to_run = f"python off_policy.py {configs_str} {failed_str} {cuda_str} --log_directory={args.experiment_name} --wandb={wandb_name}"
+    script_to_run = f"python off_policy.py {configs_str} {failed_str} {cuda_str} --wandb={wandb_name}"
 
 sbatch_skeleton = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
