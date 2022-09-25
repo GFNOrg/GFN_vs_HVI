@@ -43,7 +43,7 @@ from learn_utils import (
 import io
 from PIL import Image
 
-from paper_configs import all_configs_dict
+from paper_configs import all_configs_dict, all_local_configs_dict
 from get_failed_jobs_configs import get_failed_configs_list
 
 
@@ -168,6 +168,7 @@ parser.add_argument("--task_id", type=int, default=None)
 parser.add_argument("--total", type=int, default=None)
 parser.add_argument("--offset", type=int, default=None)
 parser.add_argument("--failed_runs", action="store_true", default=False)
+parser.add_argument("--local", action="store_true", default=False)
 
 parser.add_argument(
     "--early_stop", type=int, default=20
@@ -193,8 +194,10 @@ if args.failed_runs:
     config_id = failed_configs[config_id - 1]
     args.config_id = config_id
 
-
-config = all_configs_dict[config_id - 1]
+if args.local:
+    config = all_local_configs_dict[config_id - 1]
+else:
+    config = all_configs_dict[config_id - 1]
 for key in config:
     setattr(args, key, config[key])
 
