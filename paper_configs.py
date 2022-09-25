@@ -17,115 +17,24 @@ lrs = []
 # mode, sampling_mode, baseline, exploration_phase_ends_by, init_temperature, lr, lr_PB, lr_Z, lr_scheduling, schedule
 configs = [
     ("tb", "on_policy", "None", -1, 0, 4e-3, 3e-4, 0.04, "plateau", 0.9),
-    ("tb", "on_policy", "None", -1, 0, 4e-3, 3e-4, 0.04, "None", 1),
-    ("tb", "on_policy", "None", -1, 0, 5e-3, 1e-3, 0.05, "plateau", 0.5),
-    ("tb", "on_policy", "None", -1, 0, 1e-3, 7e-3, 0.01, "plateau", 0.5),
-    ("tb", "on_policy", "None", -1, 0, 1e-3, 7e-3, 0.01, "plateau", 0.1),
-    ("tb", "pure_off_policy", "None", -5, 1, 5e-3, 1e-3, 0.05, "plateau", 0.5),
-    ("tb", "pure_off_policy", "None", -10, 1, 5e-3, 1e-3, 0.05, "plateau", 0.5),
     ("tb", "pure_off_policy", "None", -5, 1, 5e-3, 1e-3, 0.05, "plateau", 0.9),
-    ("tb", "pure_off_policy", "None", -10, 1, 5e-3, 1e-3, 0.05, "plateau", 0.9),
     ("modified_db", "on_policy", "None", -1, 0, 3e-4, 2e-4, 0.1, "plateau", 0.5),
-    ("modified_db", "on_policy", "None", -1, 0, 6e-3, 3e-3, 0.05, "plateau", 0.9),
-    ("modified_db", "on_policy", "None", -1, 0, 4e-3, 3e-4, 0.04, "plateau", 0.9),
     ("modified_db", "pure_off_policy", "None", -5, 1, 6e-3, 3e-3, 0.05, "plateau", 0.9),
-    (
-        "modified_db",
-        "pure_off_policy",
-        "None",
-        -10,
-        1,
-        6e-3,
-        3e-3,
-        0.05,
-        "plateau",
-        0.9,
-    ),
-    ("reverse_kl", "on_policy", "local", -1, 0, 1e-3, 7e-3, 0.01, "plateau", 0.1),
-    ("reverse_kl", "on_policy", "local", -1, 0, 1e-3, 7e-3, 0.01, "plateau", 0.5),
-    ("reverse_kl", "on_policy", "global", -1, 0, 1e-3, 7e-3, 0.01, "plateau", 0.1),
+    # ("reverse_kl", "on_policy", "local", -1, 0, 1e-3, 7e-3, 0.01, "plateau", 0.5),
     ("reverse_kl", "on_policy", "global", -1, 0, 1e-3, 7e-3, 0.01, "plateau", 0.5),
-    ("reverse_kl", "pure_off_policy", "local", -10, 1, 7e-3, 2e-3, 0.1, "plateau", 0.5),
-    ("reverse_kl", "pure_off_policy", "local", -5, 1, 7e-3, 2e-3, 0.1, "plateau", 0.5),
-    (
-        "reverse_kl",
-        "pure_off_policy",
-        "global",
-        -10,
-        1,
-        7e-3,
-        2e-3,
-        0.1,
-        "plateau",
-        0.5,
-    ),
+    # ("reverse_kl", "pure_off_policy", "local", -5, 1, 7e-3, 2e-3, 0.1, "plateau", 0.5),
     ("reverse_kl", "pure_off_policy", "global", -5, 1, 7e-3, 2e-3, 0.1, "plateau", 0.5),
-    ("forward_kl", "on_policy", "local", -1, 0, 3e-3, 2e-4, 0.008, "plateau", 0.5),
-    ("forward_kl", "on_policy", "local", -1, 0, 3e-3, 1e-3, 0.02, "None", 1),
+    # ("forward_kl", "on_policy", "local", -1, 0, 3e-3, 2e-4, 0.008, "plateau", 0.5),
     ("forward_kl", "on_policy", "global", -1, 0, 3e-3, 2e-4, 0.008, "plateau", 0.5),
-    ("forward_kl", "on_policy", "global", -1, 0, 3e-3, 1e-3, 0.02, "None", 1),
-    ("forward_kl", "pure_off_policy", "local", -10, 1, 3e-3, 2e-3, 0.02, "None", 1),
-    (
-        "forward_kl",
-        "pure_off_policy",
-        "local",
-        -10,
-        1,
-        3e-3,
-        2e-3,
-        0.02,
-        "plateau",
-        0.5,
-    ),
+    # ("forward_kl", "pure_off_policy", "local", -10, 1, 3e-3, 2e-3, 0.02, "None", 1),
     ("forward_kl", "pure_off_policy", "global", -10, 1, 3e-3, 2e-3, 0.02, "None", 1),
-    (
-        "forward_kl",
-        "pure_off_policy",
-        "global",
-        -10,
-        1,
-        3e-3,
-        2e-3,
-        0.02,
-        "plateau",
-        0.5,
-    ),
     ("rws", "on_policy", "None", -1, 0, 1e-3, 1e-3, 0.05, "plateau", 0.5),
-    ("rws", "on_policy", "None", -1, 0, 7e-4, 3e-4, 0.02, "None", 1),
     ("rws", "pure_off_policy", "None", -10, 1, 7e-4, 3e-4, 0.02, "None", 1),
     ("rws", "pure_off_policy", "None", -5, 1, 7e-4, 3e-4, 0.02, "None", 1),
-    ("rws", "pure_off_policy", "None", -10, 1, 1e-3, 1e-3, 0.05, "plateau", 0.5),
-    ("rws", "pure_off_policy", "None", -5, 1, 7e-4, 3e-4, 0.02, "None", 1),
-    ("reverse_rws", "on_policy", "local", -1, 0, 3e-3, 8e-4, 0.07, "plateau", 0.9),
-    ("reverse_rws", "on_policy", "local", -1, 0, 3e-3, 1e-3, 0.02, "None", 1),
-    ("reverse_rws", "on_policy", "global", -1, 0, 3e-3, 8e-4, 0.07, "plateau", 0.9),
+    # ("reverse_rws", "on_policy", "local", -1, 0, 3e-3, 1e-3, 0.02, "None", 1),
     ("reverse_rws", "on_policy", "global", -1, 0, 3e-3, 1e-3, 0.02, "None", 1),
-    ("reverse_rws", "pure_off_policy", "local", -3, 1, 3e-3, 1e-3, 0.02, "None", 1),
-    (
-        "reverse_rws",
-        "pure_off_policy",
-        "local",
-        -10,
-        1,
-        3e-3,
-        1e-3,
-        0.02,
-        "plateau",
-        0.5,
-    ),
+    # ("reverse_rws", "pure_off_policy", "local", -3, 1, 3e-3, 1e-3, 0.02, "None", 1),
     ("reverse_rws", "pure_off_policy", "global", -10, 1, 3e-3, 1e-3, 0.02, "None", 1),
-    (
-        "reverse_rws",
-        "pure_off_policy",
-        "global",
-        -10,
-        1,
-        3e-3,
-        1e-3,
-        0.02,
-        "plateau",
-        0.5,
-    ),
 ]
 
 configs_dict = [
@@ -151,14 +60,17 @@ configs_dict = [
 ]
 
 all_configs_dict = []
-for seed in range(100, 110):
+for seed in range(105, 110):
     for replay_capacity in [1000, 10000]:
         for config_dict in configs_dict:
-            if config_dict["sampling_mode"] == "on_policy" and replay_capacity != 1000:
+            config = config_dict.copy()
+            if config["sampling_mode"] == "on_policy" and replay_capacity != 1000:
                 continue
-            config_dict["seed"] = seed
-            config_dict["replay_capacity"] = replay_capacity
-            all_configs_dict.append(config_dict)
+            if seed == 109 and replay_capacity == 10000:
+                continue
+            config["seed"] = seed
+            config["replay_capacity"] = replay_capacity
+            all_configs_dict.append(config)
 
 
 if __name__ == "__main__":

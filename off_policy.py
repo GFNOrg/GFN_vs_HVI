@@ -159,7 +159,7 @@ parser.add_argument(
 )  # 1000 would be a good value
 
 # 6 - Logging and checkpointing specific arguments
-parser.add_argument("--wandb", type=str, default="off_policy_gflownets_paper")
+parser.add_argument("--wandb", type=str, default="hvi_paper")
 parser.add_argument("--no_wandb", action="store_true", default=False)
 
 # 7 - Misc
