@@ -194,10 +194,7 @@ def evaluate_trajectories(
         else:
             baseline = 0.0
         if args.sampling_mode == "off_policy":
-            tempered_logPF_trajectories, _ = loss_fn.get_pfs_and_pbs(
-                trajectories, temperature=temperature, epsilon=epsilon  # type: ignore
-            )
-            tempered_logPF_trajectories = tempered_logPF_trajectories.sum(dim=0)
+            tempered_logPF_trajectories = trajectories.log_pfs
             importance_sampling_weights = torch.exp(
                 -tempered_logPF_trajectories + logPF_trajectories  # type: ignore
             ).detach()

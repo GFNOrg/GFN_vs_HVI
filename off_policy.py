@@ -43,7 +43,7 @@ from learn_utils import (
 import io
 from PIL import Image
 
-from paper_configs import all_configs_dict
+from paper_configs import all_configs_dict, all_extra_configs_dict
 from get_failed_jobs_configs import get_failed_configs_list
 
 
@@ -153,13 +153,13 @@ parser.add_argument(
 )
 
 # 5 - Validation specific arguments
-parser.add_argument("--validation_interval", type=int, default=100)
+parser.add_argument("--validation_interval", type=int, default=0)
 parser.add_argument(
     "--gradient_estimation_interval", type=int, default=1000
 )  # 1000 would be a good value
 
 # 6 - Logging and checkpointing specific arguments
-parser.add_argument("--wandb", type=str, default="hvi_paper_final")
+parser.add_argument("--wandb", type=str, default="hvi_paper_extra")
 parser.add_argument("--no_wandb", action="store_true", default=False)
 
 # 7 - Misc
@@ -194,7 +194,7 @@ if args.failed_runs:
     args.config_id = config_id
 
 if config_id is not None and config_id != 0:
-    config = all_configs_dict[config_id - 1]
+    config = all_extra_configs_dict[config_id - 1]
     for key in config:
         setattr(args, key, config[key])
 
