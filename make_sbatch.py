@@ -5,15 +5,14 @@ from argparse import ArgumentParser
 
 parser = ArgumentParser()
 parser.add_argument("--job_name", type=str, default=None)
-parser.add_argument("--n_threads_per_task", type=int, default=3)
+parser.add_argument("--n_threads_per_task", type=int, default=1)
 parser.add_argument("--ntasks_per_node", type=int, default=6)
 parser.add_argument("--partition", type=str, default="main")
 parser.add_argument("--offset", type=int, default=0)
-parser.add_argument("--experiment_name", type=str, default="off_policy_gflownets_paper")
+parser.add_argument("--experiment_name", type=str, default="hvi_paper_final")
 parser.add_argument("--no_cuda", action="store_true", default=False)
 parser.add_argument("--failed", action="store_true", default=False)
 parser.add_argument("--sweep", type=str, default=None)
-
 
 args = parser.parse_args()
 
@@ -29,7 +28,7 @@ if not os.path.exists(sbatch_directory):
     os.makedirs(sbatch_directory)
 
 job_name = (
-    args.job_name
+    f"{args.job_name}_{args.offset}"
     if args.job_name is not None
     else f"{args.experiment_name.split('_')[0]}_{args.offset}"
 )
@@ -44,7 +43,7 @@ ntasks_per_node = args.ntasks_per_node
 partition = args.partition
 gres = "gpu:1"
 cpus_per_task = 1
-mem = "10G"
+mem = "16G"
 
 conda_env = "gfn"
 
