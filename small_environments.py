@@ -43,7 +43,7 @@ from learn_utils import (
 import io
 from PIL import Image
 
-from paper_configs import all_configs_dict, all_extra_configs_dict
+from small_configs import all_configs_dict
 from get_failed_jobs_configs import get_failed_configs_list
 
 
@@ -53,20 +53,14 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--no_cuda", action="store_true", default=False)
 
 # 1 - Environment specific arguments
-parser.add_argument(
-    "--env",
-    type=str,
-    choices=["very_hard", "hard", "big", "easy", "medium", "manual"],
-    default="hard",
-)
 parser.add_argument("--ndim", type=int, default=2)
 parser.add_argument("--height", type=int, default=8)
-parser.add_argument("--R0", type=float, default=0.1)
+parser.add_argument("--R0", type=float, default=0.001)
 parser.add_argument("--reward_cos", action="store_true", default=False)
 
 # 2 - Training specific arguments
-parser.add_argument("--n_trajectories", type=int, default=1000000)
-parser.add_argument("--batch_size", type=int, default=64)
+parser.add_argument("--n_trajectories", type=int, default=200000)
+parser.add_argument("--batch_size", type=int, default=128)
 parser.add_argument("--lr", type=float, default=1e-3)
 parser.add_argument("--lr_PB", type=float, default=1e-3)
 parser.add_argument("--lr_Z", type=float, default=1e-1)
@@ -142,19 +136,19 @@ parser.add_argument(
     ],
     default="tb",
 )
-parser.add_argument("--PB", type=str, choices=["uniform", "learnable", "tied"])
+parser.add_argument(
+    "--PB", type=str, choices=["uniform", "learnable", "tied"], default="uniform"
+)
 parser.add_argument(
     "--baseline", type=str, choices=["None", "local", "global"], default="None"
 )
 
 # 5 - Validation specific arguments
-parser.add_argument("--validation_interval", type=int, default=0)
-parser.add_argument(
-    "--gradient_estimation_interval", type=int, default=1000
-)  # 1000 would be a good value
+parser.add_argument("--validation_interval", type=int, default=200)
+
 
 # 6 - Logging and checkpointing specific arguments
-parser.add_argument("--wandb", type=str, default="hvi_paper_extra")
+parser.add_argument("--wandb", type=str, default="hvi_paper_small")
 parser.add_argument("--no_wandb", action="store_true", default=False)
 
 # 7 - Misc
@@ -165,10 +159,11 @@ parser.add_argument("--offset", type=int, default=None)
 parser.add_argument("--failed_runs", action="store_true", default=False)
 
 parser.add_argument(
-    "--early_stop", type=int, default=20
+    "--early_stop", type=int, default=0
 )  # Number of successive logs such that if there is no improvement, we stop
 
 args = parser.parse_args()
+
 config_id = None
 slurm_proc_id = os.environ.get("SLURM_PROCID")
 print("slurm_proc_id:", slurm_proc_id)
@@ -189,7 +184,7 @@ if args.failed_runs:
     args.config_id = config_id
 
 if config_id is not None and config_id != 0:
-    config = all_extra_configs_dict[config_id - 1]
+    config = all_configs_dict[config_id - 1]
     for key in config:
         setattr(args, key, config[key])
 
@@ -220,18 +215,7 @@ print(
 )
 
 ## 1- Create the environment and models
-if args.env == "hard":
-    (ndim, height, R0) = (2, 64, 0.001)
-elif args.env == "very_hard":
-    (ndim, height, R0) = (2, 128, 0.001)
-elif args.env == "big":
-    (ndim, height, R0) = (2, 128, 0.1)
-elif args.env == "medium":
-    (ndim, height, R0) = (4, 8, 0.01)
-elif args.env == "easy":
-    (ndim, height, R0) = (4, 8, 0.1)
-else:
-    (ndim, height, R0) = (args.ndim, args.height, args.R0)
+(ndim, height, R0) = (args.ndim, args.height, args.R0)
 env = HyperGrid(ndim, height, R0, reward_cos=args.reward_cos)
 
 parametrization = make_tb_parametrization(
@@ -244,12 +228,10 @@ backward_actions_sampler = LogitPBActionsSampler(estimator=parametrization.logit
 trajectories_sampler = TrajectoriesSampler(
     env, actions_sampler, backward_actions_sampler=backward_actions_sampler
 )
-if args.mode == "modified_db":
-    loss_fn = DetailedBalance(parametrization)
-else:
-    loss_fn = TrajectoryBalance(
-        parametrization, on_policy=(args.sampling_mode == "on_policy")
-    )
+
+loss_fn = TrajectoryBalance(
+    parametrization, on_policy=(args.sampling_mode == "on_policy")
+)
 
 n_iterations = args.n_trajectories // args.batch_size
 
@@ -373,15 +355,6 @@ for i in trange(iteration, n_iterations):
         else:
             scheduler_pb.step()  # type: ignore
 
-    if (
-        args.gradient_estimation_interval != 0
-        and i % args.gradient_estimation_interval == 0
-    ) or i == n_iterations - 1:
-        gradients_log = get_gradients_log(
-            parametrization, trajectories_sampler, args, loss_fn, actions_sampler
-        )
-    else:
-        gradients_log = {}
     if i % args.validation_interval == 0 or i == n_iterations - 1:
         if run_name != "temporary_run":
             save(
@@ -398,33 +371,14 @@ for i in trange(iteration, n_iterations):
                 save_path,
             )
         to_log = {"states_visited": (i + 1) * args.batch_size, "loss": loss.item()}
-        validation_info, true_dist, P_T = get_validation_info(env, parametrization)
+        validation_info, true_dist, P_T = get_validation_info(
+            env, parametrization, cheap=True
+        )
         current_jsd = validation_info["jsd"]
         to_log.update(validation_info)
-        to_log.update(gradients_log)
 
         if use_wandb:
             wandb.log(to_log, step=i)
-            if env.ndim == 2:
-                fig = plt.figure(figsize=(5, 5))
-                ax = fig.add_subplot(111)
-                ax.imshow(P_T.numpy())
-                buf = io.BytesIO()
-                fig.savefig(buf)
-                buf.seek(0)
-                pillow_image = Image.open(buf)
-                plt.clf()
-                plt.close()
-                wandb.log({"P_T": wandb.Image(pillow_image)}, step=i)
-                wandb.log(
-                    {
-                        "temperature": actions_sampler.temperature,
-                        "sf_temperature": actions_sampler.sf_temperature,
-                        "epsilon": actions_sampler.epsilon,
-                        "lr": optimizer_pf.param_groups[0]["lr"],
-                    },
-                    step=i,
-                )
 
         tqdm.write(f"{i}: {to_log} / {2 ** ndim}")
         if to_log["jsd"] < best_jsd:

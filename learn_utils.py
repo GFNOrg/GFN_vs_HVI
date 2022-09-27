@@ -130,32 +130,35 @@ def make_optimizers(
     else:
         raise ValueError("Unknown scheduler type")
     if load_from is not None:
-        optimizer_pf.load_state_dict(
-            torch.load(os.path.join(load_from, "optimizer.pt"))
-        )
-        if optimizer_pb is not None and os.path.exists(
-            os.path.join(load_from, "optimizer_pb.pt")
-        ):
-            optimizer_pb.load_state_dict(
-                torch.load(os.path.join(load_from, "optimizer_pb.pt"))
+        try:
+            optimizer_pf.load_state_dict(
+                torch.load(os.path.join(load_from, "optimizer.pt"))
             )
-        optimizer_Z.load_state_dict(
-            torch.load(os.path.join(load_from, "optimizer_Z.pt"))
-        )
-        if scheduler_pf is not None:
-            scheduler_pf.load_state_dict(
-                torch.load(os.path.join(load_from, "scheduler.pt"))
+            if optimizer_pb is not None and os.path.exists(
+                os.path.join(load_from, "optimizer_pb.pt")
+            ):
+                optimizer_pb.load_state_dict(
+                    torch.load(os.path.join(load_from, "optimizer_pb.pt"))
+                )
+            optimizer_Z.load_state_dict(
+                torch.load(os.path.join(load_from, "optimizer_Z.pt"))
             )
-        if scheduler_pb is not None and os.path.exists(
-            os.path.join(load_from, "scheduler_pb.pt")
-        ):
-            scheduler_pb.load_state_dict(
-                torch.load(os.path.join(load_from, "scheduler_pb.pt"))
-            )
-        if scheduler_Z is not None:
-            scheduler_Z.load_state_dict(
-                torch.load(os.path.join(load_from, "scheduler_Z.pt"))
-            )
+            if scheduler_pf is not None:
+                scheduler_pf.load_state_dict(
+                    torch.load(os.path.join(load_from, "scheduler.pt"))
+                )
+            if scheduler_pb is not None and os.path.exists(
+                os.path.join(load_from, "scheduler_pb.pt")
+            ):
+                scheduler_pb.load_state_dict(
+                    torch.load(os.path.join(load_from, "scheduler_pb.pt"))
+                )
+            if scheduler_Z is not None:
+                scheduler_Z.load_state_dict(
+                    torch.load(os.path.join(load_from, "scheduler_Z.pt"))
+                )
+        except FileNotFoundError:
+            print("Could not load optimizers -- starting from scratch")
     return (
         optimizer_pf,
         optimizer_pb,

@@ -10,10 +10,15 @@ import math
 
 def get_metadata(load_from=None):
     if load_from is not None:
-        with open(os.path.join(load_from, "metadata.txt"), "r") as f:
-            lines = f.readlines()
-            iteration = int(lines[0].split(":")[1].strip())
-            wandb_id = lines[1].split(":")[1].strip()
+        try:
+            with open(os.path.join(load_from, "metadata.txt"), "r") as f:
+                lines = f.readlines()
+                iteration = int(lines[0].split(":")[1].strip())
+                wandb_id = lines[1].split(":")[1].strip()
+        except FileNotFoundError:
+            print("No metadata file found, starting from scratch")
+            iteration = 0
+            wandb_id = None
     else:
         iteration = 0
         wandb_id = None
@@ -118,22 +123,26 @@ def deep_iter(data, ix=tuple()):
         yield ix, data
 
 
-def get_exact_P_T(env, logit_PF: LogitPFEstimator):
+def all_indices(dim, height):
+    if dim == 1:
+        return [(i,) for i in range(height)]
+    return [(i, *j) for i in range(height) for j in all_indices(dim - 1, height)]
+
+
+def get_exact_P_T(env, logit_PF: LogitPFEstimator, cheap=False):
     """This function evaluates the exact terminating state distribution P_T for HyperGrid.
     P_T(s') = u(s') P_F(s_f | s') where u(s') = \sum_{s \in Par(s')}  u(s) P_F(s' | s), and u(s_0) = 1
     """
 
     grid = env.build_grid()
     ndim = env.ndim
+    height = env.height
     action_sampler = LogitPFActionsSampler(logit_PF, temperature=1.0)
     probabilities = action_sampler.get_probs(grid)[1]
     u = torch.ones(grid.batch_shape)
-    iter_u = list(deep_iter(u))
-    for grid_ix, _ in iter_u:
-        if grid_ix == (0,) * ndim:
-            continue
-        else:
-            index = tuple(grid_ix)
+    if cheap:
+        indices = all_indices(ndim, height)
+        for index in indices[1:]:
             parents = [
                 index[:i] + (index[i] - 1,) + index[i + 1 :] + (i,)
                 for i in range(len(index))
@@ -141,6 +150,21 @@ def get_exact_P_T(env, logit_PF: LogitPFEstimator):
             ]
             parents = torch.tensor(parents).T.numpy().tolist()
             u[index] = torch.sum(u[parents[:-1]] * probabilities[parents])
+
+    else:
+        iter_u = list(deep_iter(u))
+        for grid_ix, _ in iter_u:
+            if grid_ix == (0,) * ndim:
+                continue
+            else:
+                index = tuple(grid_ix)
+                parents = [
+                    index[:i] + (index[i] - 1,) + index[i + 1 :] + (i,)
+                    for i in range(len(index))
+                    if index[i] > 0
+                ]
+                parents = torch.tensor(parents).T.numpy().tolist()
+                u[index] = torch.sum(u[parents[:-1]] * probabilities[parents])
     return (u * probabilities[..., -1]).view(-1).detach().cpu()
 
 
@@ -168,7 +192,7 @@ def get_number_of_modes(P_T, true_dist_pmf, env_dim, env_height):
     return len(modes_idx.intersection(P_T_modes_idx)) / n_pixels_per_mode
 
 
-def get_validation_info(env, parametrization):
+def get_validation_info(env, parametrization, cheap=False):
     true_logZ = env.log_partition
     true_dist_pmf = env.true_dist_pmf.cpu()
 
@@ -176,7 +200,7 @@ def get_validation_info(env, parametrization):
     if isinstance(parametrization, TBParametrization):
         logZ = parametrization.logZ.tensor.item()
 
-    P_T = get_exact_P_T(env, parametrization.logit_PF)
+    P_T = get_exact_P_T(env, parametrization.logit_PF, cheap=cheap)
     l1_dist = (P_T - true_dist_pmf).abs().mean().item()
     jsd = JSD(P_T, true_dist_pmf).item()
     number_of_modes = get_number_of_modes(P_T, true_dist_pmf, env.ndim, env.height)
