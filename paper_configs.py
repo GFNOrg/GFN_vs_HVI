@@ -133,6 +133,16 @@ for seed in range(105, 110):
         config["seed"] = seed
         all_extra_configs_dict.append(config)
 
+for config_dict in extra_configs_dict:
+    if (
+        config_dict["mode"] == "forward_kl"
+        and config_dict["baseline"] == "global"
+        and config_dict["lr_scheduling"] == "None"
+    ):
+        config = config_dict.copy()
+        config["seed"] = 105
+        all_extra_configs_dict.append(config)
+
 
 if __name__ == "__main__":
     print(len(all_configs_dict))
