@@ -93,7 +93,7 @@ parser.add_argument(
 parser.add_argument(
     "--sampling_mode",
     type=str,
-    choices=["on_policy", "off_policy", "pure_off_policy"],
+    choices=["on_policy", "off_policy", "pure_off_policy", "off_policy_with_replay"],
     default="on_policy",
 )
 # The following arguments are only used when sampling_mode is "off_policy" or "pure_off_policy"
@@ -169,6 +169,7 @@ parser.add_argument(
 )  # Number of successive logs such that if there is no improvement, we stop
 
 args = parser.parse_args()
+
 config_id = None
 slurm_proc_id = os.environ.get("SLURM_PROCID")
 print("slurm_proc_id:", slurm_proc_id)
@@ -273,7 +274,10 @@ n_iterations = args.n_trajectories // args.batch_size
 )
 
 replay_buffer = None
-if args.sampling_mode == "pure_off_policy":
+if (
+    args.sampling_mode == "pure_off_policy"
+    or args.sampling_mode == "off_policy_with_replay"
+):
     replay_buffer = make_buffer(
         env,
         capacity=args.replay_capacity,

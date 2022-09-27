@@ -107,6 +107,103 @@ extra_configs_dict = [
     for mode, sampling_mode, baseline, exploration_phase_ends_by, init_temperature, lr, lr_PB, lr_Z, lr_scheduling, schedule in extra_configs
 ]
 
+extra_extra_configs = [
+    (
+        "reverse_kl",
+        "off_policy_with_replay",
+        "global",
+        -5,
+        1,
+        1e-3,
+        7e-3,
+        0.01,
+        "plateau",
+        0.5,
+    ),
+    (
+        "forward_kl",
+        "off_policy_with_replay",
+        "global",
+        -10,
+        1,
+        3e-3,
+        2e-4,
+        0.008,
+        "plateau",
+        0.5,
+    ),
+    ("rws", "off_policy_with_replay", "None", -5, 1, 7e-4, 3e-4, 0.02, "None", 1),
+    (
+        "reverse_rws",
+        "off_policy_with_replay",
+        "global",
+        -10,
+        1,
+        3e-3,
+        1e-3,
+        0.02,
+        "None",
+        1,
+    ),
+    (
+        "reverse_rws",
+        "off_policy_with_replay",
+        "global",
+        -10,
+        1,
+        3e-3,
+        1e-3,
+        0.02,
+        "None",
+        1,
+    ),
+    (
+        "reverse_rws",
+        "off_policy_with_replay",
+        "local",
+        -3,
+        1,
+        3e-3,
+        1e-3,
+        0.02,
+        "None",
+        1,
+    ),
+    (
+        "reverse_rws",
+        "off_policy_with_replay",
+        "local",
+        -3,
+        1,
+        3e-3,
+        1e-3,
+        0.02,
+        "None",
+        1,
+    ),
+]
+
+extra_extra_configs_dict = [
+    {
+        "env": "very_hard",
+        "PB": "learnable",
+        "temperature_sf": True,
+        "early_stop": 0,
+        "gradient_estimation_interval": 0,
+        "validation_interval": 200,
+        "mode": mode,
+        "sampling_mode": sampling_mode,
+        "baseline": baseline,
+        "exploration_phase_ends_by": exploration_phase_ends_by,
+        "init_temperature": init_temperature,
+        "lr": lr,
+        "lr_PB": lr_PB,
+        "lr_Z": lr_Z,
+        "lr_scheduling": lr_scheduling,
+        "schedule": schedule,
+    }
+    for mode, sampling_mode, baseline, exploration_phase_ends_by, init_temperature, lr, lr_PB, lr_Z, lr_scheduling, schedule in extra_extra_configs
+]
 
 all_configs_dict = []
 for seed in range(105, 110):
@@ -142,6 +239,15 @@ for config_dict in extra_configs_dict:
         config = config_dict.copy()
         config["seed"] = 105
         all_extra_configs_dict.append(config)
+
+for seed in range(105, 110):
+    for replay_capacity in [1000, 10000]:
+
+        for config_dict in extra_extra_configs_dict:
+            config = config_dict.copy()
+            config["seed"] = seed
+            config["replay_capacity"] = replay_capacity
+            all_extra_configs_dict.append(config)
 
 
 if __name__ == "__main__":

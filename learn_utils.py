@@ -196,7 +196,10 @@ def evaluate_trajectories(
             baseline = -parametrization.logZ.tensor.detach()
         else:
             baseline = 0.0
-        if args.sampling_mode == "off_policy":
+        if (
+            args.sampling_mode == "off_policy"
+            or args.sampling_mode == "off_policy_with_replay"
+        ):
             tempered_logPF_trajectories = trajectories.log_pfs
             importance_sampling_weights = torch.exp(
                 -tempered_logPF_trajectories + logPF_trajectories  # type: ignore
