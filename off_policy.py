@@ -4,7 +4,6 @@ from argparse import ArgumentParser
 from tqdm import tqdm, trange
 
 import wandb
-import gfn
 import matplotlib.pyplot as plt
 import matplotlib
 
@@ -17,10 +16,7 @@ from gfn.samplers import (
     TrajectoriesSampler,
     LogitPBActionsSampler,
 )
-from gfn.estimators import LogitPFEstimator, LogitPBEstimator, LogZEstimator
 from gfn.losses import TrajectoryBalance, DetailedBalance
-from gfn.parametrizations import TBParametrization
-from gfn.containers import Trajectories, Transitions
 
 
 from gfn.validate import validate
@@ -44,6 +40,7 @@ import io
 from PIL import Image
 
 from paper_configs import all_configs_dict, all_extra_configs_dict
+from small_configs import small_configs_dict
 from get_failed_jobs_configs import get_failed_configs_list
 
 
@@ -56,7 +53,7 @@ parser.add_argument("--no_cuda", action="store_true", default=False)
 parser.add_argument(
     "--env",
     type=str,
-    choices=["very_hard", "hard", "big", "easy", "medium", "manual"],
+    choices=["very_hard", "hard", "big", "easy", "medium", "medium2", "manual"],
     default="hard",
 )
 parser.add_argument("--ndim", type=int, default=2)
@@ -154,7 +151,7 @@ parser.add_argument(
 )  # 1000 would be a good value
 
 # 6 - Logging and checkpointing specific arguments
-parser.add_argument("--wandb", type=str, default="hvi_paper_extra")
+parser.add_argument("--wandb", type=str, default="hvi_paper_smallenvs")
 parser.add_argument("--no_wandb", action="store_true", default=False)
 
 # 7 - Misc
@@ -163,6 +160,8 @@ parser.add_argument("--task_id", type=int, default=None)
 parser.add_argument("--total", type=int, default=None)
 parser.add_argument("--offset", type=int, default=None)
 parser.add_argument("--failed_runs", action="store_true", default=False)
+
+parser.add_argument("--small", action="store_true", default=False)
 
 parser.add_argument(
     "--early_stop", type=int, default=20
@@ -190,13 +189,15 @@ if args.failed_runs:
     args.config_id = config_id
 
 if config_id is not None and config_id != 0:
-    config = all_extra_configs_dict[config_id - 1]
+    if args.small:
+        config = small_configs_dict[config_id - 1]
+    else:
+        config = all_extra_configs_dict[config_id - 1]
     for key in config:
         setattr(args, key, config[key])
 
 if args.temperature_sf_string == "True":
     args.temperature_sf = True
-
 
 run_name = (
     "temporary_run"
@@ -229,6 +230,8 @@ elif args.env == "big":
     (ndim, height, R0) = (2, 128, 0.1)
 elif args.env == "medium":
     (ndim, height, R0) = (4, 8, 0.01)
+elif args.env == "medium2":
+    (ndim, height, R0) = (2, 64, 0.1)
 elif args.env == "easy":
     (ndim, height, R0) = (4, 8, 0.1)
 else:

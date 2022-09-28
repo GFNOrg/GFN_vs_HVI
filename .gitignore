@@ -171,3 +171,5 @@ sweep_test.yaml
 *.png
 *.csv
 *.pdf
+
+.DS_Store

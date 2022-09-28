@@ -306,7 +306,7 @@ def get_gradients_log(
         logPF_trajectories,
         logPB_trajectories,
     )
-    loss_big_batch.backward(retain_graph=True)
+    loss_big_batch.backward()
     gradients_big_batch = [p.grad.clone() for p in logit_PF_parameters]
 
     for K in [4, 6]:
@@ -348,7 +348,7 @@ def get_gradients_log(
                 logPB_trajectories,
             )
 
-            loss_small_batch.backward(retain_graph=True)
+            loss_small_batch.backward()
             gradients_small_batch = [p.grad.clone() for p in logit_PF_parameters]
             cosine_similarities = [
                 (gradient_big * gradient_small).sum()
