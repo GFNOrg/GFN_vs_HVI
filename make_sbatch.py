@@ -9,9 +9,10 @@ parser.add_argument("--n_threads_per_task", type=int, default=1)
 parser.add_argument("--ntasks_per_node", type=int, default=6)
 parser.add_argument("--partition", type=str, default="main")
 parser.add_argument("--offset", type=int, default=0)
-parser.add_argument("--experiment_name", type=str, default="hvi_paper_final")
+parser.add_argument("--experiment_name", type=str, default="hvi_paper_smallenvs")
 parser.add_argument("--no_cuda", action="store_true", default=False)
 parser.add_argument("--failed", action="store_true", default=False)
+parser.add_argument("--small", action="store_true", default=False)
 parser.add_argument("--sweep", type=str, default=None)
 
 args = parser.parse_args()
@@ -34,6 +35,8 @@ job_name = (
 )
 if args.failed:
     job_name = f"{job_name}_f"
+if args.small:
+    job_name = f"{job_name}_s"
 if args.sweep is not None:
     job_name = f"{job_name}_{args.sweep}"
 
@@ -49,6 +52,7 @@ conda_env = "gfn"
 
 cuda_str = " --no_cuda" if args.no_cuda else ""
 failed_str = " --failed_runs" if args.failed else ""
+small_str = " --small" if args.small else ""
 
 bash_range = "{1.." + str(args.n_threads_per_task) + "}"
 configs_str = f"--task_id=$i --total={args.n_threads_per_task} --offset={args.offset}"
@@ -56,7 +60,7 @@ configs_str = f"--task_id=$i --total={args.n_threads_per_task} --offset={args.of
 if args.sweep is not None:
     script_to_run = f"wandb agent saleml/{args.experiment_name}/{args.sweep}"
 else:
-    script_to_run = f"python off_policy.py {configs_str} {failed_str} {cuda_str} --wandb={wandb_name}"
+    script_to_run = f"python off_policy.py {configs_str} {failed_str} {cuda_str} {small_str} --wandb={wandb_name}"
 
 sbatch_skeleton = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
