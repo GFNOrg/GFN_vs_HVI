@@ -18,7 +18,7 @@ configs_dict = [
     {
         "PB": "learnable",
         "temperature_sf": True,
-        "early_stop": 0,
+        "early_stop": 20,
         "gradient_estimation_interval": 0,
         "validation_interval": 200,
         "mode": mode,
