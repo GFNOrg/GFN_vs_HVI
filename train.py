@@ -12,14 +12,14 @@ matplotlib.use("Agg")
 
 from gfn.envs import HyperGrid
 from gfn.samplers import (
-    LogitPFActionsSampler,
+    DiscreteActionsSampler,
     TrajectoriesSampler,
-    LogitPBActionsSampler,
+    BackwardDiscreteActionsSampler,
 )
-from gfn.losses import TrajectoryBalance, DetailedBalance
+from gfn.losses import TrajectoryBalance, DetailedBalance, DBParametrization
 
 
-from gfn.validate import validate
+from gfn.utils import validate
 
 from utils import (
     get_metadata,
@@ -54,7 +54,7 @@ parser.add_argument(
     "--env",
     type=str,
     choices=["very_hard", "hard", "big", "easy", "medium", "medium2", "manual"],
-    default="hard",
+    default="very_hard",
 )
 parser.add_argument("--ndim", type=int, default=2)
 parser.add_argument("--height", type=int, default=8)
@@ -111,7 +111,7 @@ parser.add_argument(
     "--temperature_sf",
     action="store_true",
     default=False,
-    help="if true, it's sf_temperature",
+    help="if true, it's sf_bias",
 )
 
 
@@ -145,9 +145,9 @@ parser.add_argument(
 )
 
 # 5 - Validation specific arguments
-parser.add_argument("--validation_interval", type=int, default=0)
+parser.add_argument("--validation_interval", type=int, default=100)
 parser.add_argument(
-    "--gradient_estimation_interval", type=int, default=1000
+    "--gradient_estimation_interval", type=int, default=0
 )  # 1000 would be a good value
 
 # 6 - Logging and checkpointing specific arguments
@@ -239,16 +239,20 @@ else:
 env = HyperGrid(ndim, height, R0, reward_cos=args.reward_cos)
 
 parametrization = make_tb_parametrization(
-    env, args.PB, load_from=save_path if loading_model else None
+    env,
+    args.PB,
+    load_from=save_path if loading_model else None,
+    modified_db=args.mode == "modified_db",
 )
-actions_sampler = LogitPFActionsSampler(
+actions_sampler = DiscreteActionsSampler(
     estimator=parametrization.logit_PF, temperature=1.0
 )
-backward_actions_sampler = LogitPBActionsSampler(estimator=parametrization.logit_PB)
-trajectories_sampler = TrajectoriesSampler(
-    env, actions_sampler, backward_actions_sampler=backward_actions_sampler
+backward_actions_sampler = BackwardDiscreteActionsSampler(
+    estimator=parametrization.logit_PB
 )
+trajectories_sampler = TrajectoriesSampler(env, actions_sampler)
 if args.mode == "modified_db":
+    assert isinstance(parametrization, DBParametrization)
     loss_fn = DetailedBalance(parametrization)
 else:
     loss_fn = TrajectoryBalance(
@@ -318,7 +322,7 @@ for i in trange(iteration, n_iterations):
             scheduler_type=args.exploration_scheduling,
         )  # type: ignore
         if args.temperature_sf:
-            actions_sampler.sf_temperature = temperature
+            actions_sampler.sf_bias = temperature
         else:
             actions_sampler.temperature = temperature
         actions_sampler.epsilon = epsilon
@@ -426,7 +430,7 @@ for i in trange(iteration, n_iterations):
                 wandb.log(
                     {
                         "temperature": actions_sampler.temperature,
-                        "sf_temperature": actions_sampler.sf_temperature,
+                        "sf_bias": actions_sampler.sf_bias,
                         "epsilon": actions_sampler.epsilon,
                         "lr": optimizer_pf.param_groups[0]["lr"],
                     },

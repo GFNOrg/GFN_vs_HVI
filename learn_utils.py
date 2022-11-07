@@ -1,14 +1,18 @@
-from gfn.envs import HyperGrid
 import torch
 import os
-from gfn.parametrizations import TBParametrization
-from gfn.estimators import LogitPFEstimator, LogitPBEstimator, LogZEstimator
-from gfn.samplers import LogitPFActionsSampler
-from gfn.containers import ReplayBuffer, Transitions
-import math
+from gfn.losses import TBParametrization, DBParametrization
+from gfn.estimators import (
+    LogitPFEstimator,
+    LogitPBEstimator,
+    LogZEstimator,
+    LogStateFlowEstimator,
+)
+from gfn.containers import Transitions
+from gfn.containers.replay_buffer import ReplayBuffer
+from gfn.modules import NeuralNet
 
 
-def make_tb_parametrization(env, PB, load_from=None):
+def make_tb_parametrization(env, PB, load_from=None, modified_db=False):
     """
     It creates a TrajectoryBalance parametrization
 
@@ -19,12 +23,17 @@ def make_tb_parametrization(env, PB, load_from=None):
     """
     logZ_tensor = torch.tensor(0.0)
     logZ = LogZEstimator(logZ_tensor)
+    logF = LogStateFlowEstimator(env, module_name="Zero")
     logit_PF = LogitPFEstimator(env=env, module_name="NeuralNet")
     logit_PB = LogitPBEstimator(
         env=env,
         module_name="NeuralNet" if PB in ["learnable", "tied"] else "Uniform",
-        torso=logit_PF.module.torso if PB == "tied" else None,
+        torso=logit_PF.module.torso
+        if PB == "tied" and isinstance(logit_PF.module, NeuralNet)
+        else None,
     )
+    if modified_db:
+        parametrization = DBParametrization(logit_PF, logit_PB, logF)
     parametrization = TBParametrization(logit_PF, logit_PB, logZ)
     if load_from is not None:
         parametrization.load_state_dict(load_from)
@@ -41,7 +50,7 @@ def make_buffer(env, capacity, load_from=None):
     :param load_from: the path to load the buffer from
     :return: the buffer
     """
-    buffer = ReplayBuffer(env, capacity, objects="trajectories")
+    buffer = ReplayBuffer(env, capacity, objects_type="trajectories")
     if load_from is not None:
         buffer.load(load_from)
     return buffer
@@ -74,7 +83,7 @@ def make_optimizers(
     params_pf = parametrization.logit_PF.module.parameters()
     optimizer_pf = torch.optim.Adam(params_pf, lr=lr)
     optimizer_pb = None
-    if parametrization.logit_PB.module_name == "NeuralNet":
+    if isinstance(parametrization.logit_PB.module, NeuralNet):
         params_pb = parametrization.logit_PB.module.parameters()
         optimizer_pb = torch.optim.Adam(params_pb, lr=lr_PB)
     optimizer_Z = torch.optim.Adam([parametrization.logZ.tensor], lr=lr_Z)
@@ -173,7 +182,7 @@ def evaluate_trajectories(
     args, parametrization, loss_fn, trajectories, temperature, epsilon
 ):
     if args.mode == "modified_db":
-        transitions = Transitions.from_trajectories(trajectories)
+        transitions = trajectories.to_transitions()
         scores = loss_fn.get_modified_scores(transitions)
         logPF_trajectories, logPB_trajectories = None, None
     else:
@@ -273,11 +282,11 @@ def get_gradients_log(
 ):
     gradients_log = {}
     logit_PF_parameters = list(parametrization.logit_PF.module.parameters())
-    if parametrization.logit_PB.module_name == "NeuralNet":
+    if isinstance(parametrization.logit_PB.module, NeuralNet):
         logit_PB_parameters = list(parametrization.logit_PB.module.parameters())
     for p in logit_PF_parameters:
         p.grad.zero_()
-    if parametrization.logit_PB.module_name == "NeuralNet":
+    if isinstance(parametrization.logit_PB.module, NeuralNet):
         for p in logit_PB_parameters:  # type: ignore
             p.grad.zero_()
     trajectories = trajectories_sampler.sample(1024)
@@ -318,7 +327,7 @@ def get_gradients_log(
         for i, small_batch in enumerate(small_batches):
             for p in logit_PF_parameters:
                 p.grad.zero_()
-            if parametrization.logit_PB.module_name == "NeuralNet":
+            if isinstance(parametrization.logit_PB.module, NeuralNet):
                 for p in logit_PB_parameters:  # type: ignore
                     p.grad.zero_()
             parametrization.logZ.tensor.grad.zero_()

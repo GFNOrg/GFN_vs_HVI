@@ -1,10 +1,8 @@
-from gfn.envs import HyperGrid
 import torch
 import os
-from gfn.parametrizations import TBParametrization
-from gfn.estimators import LogitPFEstimator, LogitPBEstimator, LogZEstimator
-from gfn.samplers import LogitPFActionsSampler
-from gfn.containers import ReplayBuffer, Transitions
+from gfn.losses import TBParametrization
+from gfn.estimators import LogitPFEstimator
+from gfn.samplers import DiscreteActionsSampler
 import math
 
 
@@ -137,8 +135,8 @@ def get_exact_P_T(env, logit_PF: LogitPFEstimator, cheap=False):
     grid = env.build_grid()
     ndim = env.ndim
     height = env.height
-    action_sampler = LogitPFActionsSampler(logit_PF, temperature=1.0)
-    probabilities = action_sampler.get_probs(grid)[1]
+    action_sampler = DiscreteActionsSampler(logit_PF, temperature=1.0)
+    probabilities = action_sampler.get_probs(grid)
     u = torch.ones(grid.batch_shape)
     if cheap:
         indices = all_indices(ndim, height)
