@@ -14,17 +14,16 @@ matplotlib.use("Agg")
 
 from gfn.envs import HyperGrid
 from gfn.samplers import (
-    LogitPFActionsSampler,
+    DiscreteActionsSampler,
     TrajectoriesSampler,
-    LogitPBActionsSampler,
+    BackwardDiscreteActionsSampler,
 )
 from gfn.estimators import LogitPFEstimator, LogitPBEstimator, LogZEstimator
-from gfn.losses import TrajectoryBalance, DetailedBalance
-from gfn.parametrizations import TBParametrization
+from gfn.losses import TrajectoryBalance, DetailedBalance, TBParametrization
 from gfn.containers import Trajectories, Transitions
 
 
-from gfn.validate import validate
+from gfn.utils import validate
 
 from utils import (
     get_metadata,
@@ -44,8 +43,8 @@ from learn_utils import (
 import io
 from PIL import Image
 
-from small_configs import all_configs_dict
-from get_failed_jobs_configs import get_failed_configs_list
+from slurm_stuff.small_configs import small_configs_dict as all_configs_dict
+from slurm_stuff.get_failed_jobs_configs import get_failed_configs_list
 
 
 parser = ArgumentParser()
@@ -222,13 +221,13 @@ env = HyperGrid(ndim, height, R0, reward_cos=args.reward_cos)
 parametrization = make_tb_parametrization(
     env, args.PB, load_from=save_path if loading_model else None
 )
-actions_sampler = LogitPFActionsSampler(
+actions_sampler = DiscreteActionsSampler(
     estimator=parametrization.logit_PF, temperature=1.0
 )
-backward_actions_sampler = LogitPBActionsSampler(estimator=parametrization.logit_PB)
-trajectories_sampler = TrajectoriesSampler(
-    env, actions_sampler, backward_actions_sampler=backward_actions_sampler
+backward_actions_sampler = BackwardDiscreteActionsSampler(
+    estimator=parametrization.logit_PB
 )
+trajectories_sampler = TrajectoriesSampler(env, actions_sampler)
 
 loss_fn = TrajectoryBalance(
     parametrization, on_policy=(args.sampling_mode == "on_policy")
@@ -294,7 +293,7 @@ for i in trange(iteration, n_iterations):
             scheduler_type=args.exploration_scheduling,
         )  # type: ignore
         if args.temperature_sf:
-            actions_sampler.sf_temperature = temperature
+            actions_sampler.sf_bias = temperature
         else:
             actions_sampler.temperature = temperature
         actions_sampler.epsilon = epsilon

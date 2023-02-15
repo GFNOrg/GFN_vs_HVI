@@ -39,9 +39,9 @@ from learn_utils import (
 import io
 from PIL import Image
 
-from paper_configs import all_configs_dict, all_extra_configs_dict
-from small_configs import small_configs_dict
-from get_failed_jobs_configs import get_failed_configs_list
+from slurm_stuff.paper_configs import all_configs_dict, all_extra_configs_dict
+from slurm_stuff.small_configs import small_configs_dict
+from slurm_stuff.get_failed_jobs_configs import get_failed_configs_list
 
 
 parser = ArgumentParser()
