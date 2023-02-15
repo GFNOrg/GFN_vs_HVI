@@ -21,4 +21,4 @@ pip install tqdm
 ```
 and optionally `pip install wandb`
 
-You should then be able to run [train.py]](./train.py) with `python train.py --no_wandb --env manual --ndim 2 --height 16 --mode reverse_kl` for example
+You should then be able to run [train.py](./train.py) with `python train.py --no_wandb --env manual --ndim 2 --height 16 --mode reverse_kl` for example
