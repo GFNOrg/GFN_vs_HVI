@@ -1,4 +1,4 @@
-This repo include the code for the HyperGrid experiments shown in the "GFlowNets and Variational Inference" paper.
+This repo include the code for the hypergrid experiments shown in the "GFlowNets and Variational Inference" paper.
 
 The files [paper_configs](./slurm_stuff/paper_configs.py) and [small_configs](./slurm_stuff/small_configs.py) shows the configurations used for the [main file](./train.py) in order to obtain the paper results.
 
