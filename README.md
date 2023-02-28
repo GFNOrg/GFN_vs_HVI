@@ -1,6 +1,6 @@
 # GFlowNets and variational inference
 
-This repository contains code for the ICLR 2022 paper [GFlowNets and variational inference](https://arxiv.org/abs/2210.00580).
+This repository contains code for the ICLR 2023 paper [GFlowNets and variational inference](https://arxiv.org/abs/2210.00580).
 
 Please see the three directories for details on each experiment domain:
 - Synthetic grid enironment ([`grid`](./grid))
