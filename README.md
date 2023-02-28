@@ -10,11 +10,11 @@ Please see the three directories for details on each experiment domain:
 ### Citation
 
 ```
-@article{
+@article{malkin2023gflownets,
     title = {{GFlowNets} and variational inference},
     author = {Malkin, Nikolay and Lahlou, Salem and Deleu, Tristan and Ji, Xu and Hu, Edward and Everett, Katie and Zhang, Dinghuai and Bengio, Yoshua},
     journal = {International Conference on Learning Representations (ICLR)},
-    year = {2022}
+    year = {2023}
 }
 ```
 
