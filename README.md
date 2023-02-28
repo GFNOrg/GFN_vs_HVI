@@ -1,24 +1,21 @@
-This repo include the code for the hypergrid experiments shown in the "GFlowNets and Variational Inference" paper.
+# GFlowNets and variational inference
 
-The files [paper_configs](./slurm_stuff/paper_configs.py) and [small_configs](./slurm_stuff/small_configs.py) shows the configurations used for the [main file](./train.py) in order to obtain the paper results.
+This repository contains code for the ICLR 2022 paper [GFlowNets and variational inference](https://arxiv.org/abs/2210.00580).
 
+Please see the three directories for details on each experiment domain:
+- Synthetic grid enironment ([`grid`](./grid))
+- Small molecule synthesis ([`mols`](./mols))
+- Bayesian structure learning ([`dags`](./dags))
 
-# To use
+### Citation
 
-First install the [gfn library](https://github.com/saleml/gfn):
 ```
-git clone https://github.com/saleml/gfn.git
-conda create -n gfn python=3.10
-conda activate gfn
-cd gfn
-pip install -e .
+@article{
+    title = {{GFlowNets} and variational inference},
+    author = {Malkin, Nikolay and Lahlou, Salem and Deleu, Tristan and Ji, Xu and Hu, Edward and Everett, Katie and Zhang, Dinghuai and Bengio, Yoshua},
+    journal = {International Conference on Learning Representations (ICLR)},
+    year = {2022}
+}
 ```
 
-Then:
-```
-conda activate gfn
-pip install tqdm
-```
-and optionally `pip install wandb`
-
-You should then be able to run [train.py](./train.py) with `python train.py --no_wandb --env manual --ndim 2 --height 16 --mode reverse_kl` for example
+Please open an issue or contact us if you have any questions.
